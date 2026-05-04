@@ -5,16 +5,33 @@ function App() {
   const [numbers, setNumbers] = useState([])
   const [numberIndex, SetNumberIndex] = useState(1)
   const [search, setSearch] = useState('')
+  const [error, setError] = useState([])
 
-  function addNumber(e) {
+  async function addNumber(e) {
     e.preventDefault()
     const data = new FormData(e.target)
     const number = Object.fromEntries(data)
     number['fav'] = false
-    number['id'] = numberIndex
-    SetNumberIndex(numberIndex + 1)
-    setNumbers([...numbers, number])
-    e.target.reset()
+    try {
+      const res = await fetch('', {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          newContact: number
+        })
+      })
+      if (!res.ok) {
+        throw new Error(res.error || res.status)
+      }
+      const data = await res.json()
+      console.log(data)
+      // setNumbers([...numbers, number])
+      e.target.reset()
+    }
+    catch (err) {
+      console.log(`Error - ${err}`)
+      setError([...error, 'Wystąpił błąd - nie udało się dodać kontaktu.'])
+    }
   }
 
 function removeContact(id) {
@@ -51,13 +68,19 @@ const filteredNumbers = numbers.filter(n =>
   n.phone.includes(search) 
 ).sort((a, b) => b.fav - a.fav)
 
+function hideError(e) {
+  e.target.remove()
+}
+
+
   return (
     <div className='main-container'>
       <form className='add-contact-form' onSubmit={addNumber}>
         <h3>Dodaj Kontakt</h3>
         <input className='form-input' name='name' placeholder='Imię...' type='text'/>
         <input className='form-input' name='surname' placeholder='Nazwisko...' type='text'/>
-        <input className='form-input' name='phone' placeholder='Numer telefonu' type='number'/>
+        <input className='form-input' name='phone' placeholder='Numer telefonu...' type='number'/>
+        <input className='form-input' name='nickname' placeholder='Pseudonim...' type='text'/>
         <button className='form-button'>Dodaj</button>
       </form>
 
@@ -74,6 +97,14 @@ const filteredNumbers = numbers.filter(n =>
           ))}
         </ul>
       </div>
+
+      {/* dokonczyc errory */}
+      {/* <div className='error-container'>
+          { error.map((err) => 
+          <div key={err.id} onClick={(e) => {hideError(e)}} className='error'>{err.err}</div>
+          
+          )}
+      </div> */}
     </div>
   )
 }

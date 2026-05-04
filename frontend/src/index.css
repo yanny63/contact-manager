@@ -33,6 +33,26 @@
   height: 100vh;
 }
 
+.error-container {
+  position: fixed;
+  right: 60px;
+  bottom: 30px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  width: 220px;
+}
+.error {
+  background-color: red;
+  color: #fff;
+  cursor: pointer;
+  padding: var(--padding-md);
+  border: none;
+  font-size: 1rem;
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 4px 4px rgba(0, 0, 0, 0.1);
+}
+
 .main-container {
   display: flex;
   flex-direction: column;
@@ -51,6 +71,10 @@
   gap: 8px;
   max-width: 420px;
   width: 100%;
+  margin: 24px;
+}
+.add-contact-form h3 {
+  margin: 0;
 }
 
 .form-input {
