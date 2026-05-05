@@ -43,4 +43,3 @@ class DatabaseManagement:
         finally:
             cur.close()
             conn.close()
-    
