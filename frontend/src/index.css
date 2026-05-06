@@ -2,11 +2,15 @@
     --bg: #020618;
     --card: #0f172b;
     --accent: #00a6f4;
-    --hover: #0084d1;
+    --hover: #00bcff;
     --text: #f8fafc;
+    --text-button: #f8fafc;
 
     --input: #0f172b;
     --input-border: #314158;
+
+    --nav: rgba(2, 6, 24, 0.4);
+    --nav-border: rgba(255, 255, 255, 0.08);
 
     --success: #00c950;
     --error: #fb2c36;
@@ -22,8 +26,28 @@
     --radius-xl: 16px;
 }
 
+.light {
+  --bg: #f8fafc;
+  --card: #f1f5f9;
+  --accent: #0084d1;
+  --hover: #0069a8;
+  --text: #020618;
+  --text-button: #f8fafc;
+
+  --input: #e2e8f0;
+  --input-border: #cad5e2;
+
+  --nav: rgba(248, 250, 252, 0.4);
+  --nav-border: rgba(0, 0, 0, 0.08);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Inter", sans-serif;
+}
 #root {
-  padding: var(--padding-lg);
   height: 100vh;
   background-color: var(--bg);
 }
@@ -48,15 +72,118 @@
   box-shadow: 0 0 4px 4px rgba(0, 0, 0, 0.1);
 }
 
+.themeButton {
+  background-color: transparent;
+  cursor: pointer;
+  border: none;
+  font-size: 1.2rem;
+  padding: 0;
+  transition: 0.4s;
+}
+.themeButton:hover {
+  filter: brightness(120%);
+}
+
+.main {
+  display: grid;
+  grid-template-areas: 
+    "nav nav nav"
+    "aside main main"
+    "footer footer footer";
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: auto 1fr auto;
+}
+
+.nav {
+  grid-area: nav;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: var(--padding-md);
+  background-color: var(--nav);
+  width: 100%;
+  border-bottom: 1px solid var(--nav-border);
+  padding-right: 1.5rem;
+}
+
+.hasMoreElements {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
+.phoneSvg {
+  background-color: transparent;
+  fill: var(--text);
+}
+.nav-content {
+  display: flex;
+  flex-direction: row;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: end;
+}
+.nav-content-isLink {
+  padding: var(--padding-sm);
+  background-color: transparent;
+  color: var(--text);
+  border: none;
+  text-decoration: none;
+  transition: 0.4s;
+}
+.nav-content-isLink {
+  filter: brightness(120%);
+}
+
+.search-input {
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  padding: var(--padding-md);
+  color: var(--text);
+  background-color: var(--input);
+  outline: none;
+  transition: 0.4s;
+
+  /* max-width: 420px;
+  width: 100%; */
+}
+.search-input:focus {
+  border-color: var(--accent);
+}
+
+.nav-login {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  margin-left: auto;
+}
+.nav-login-isButton {
+  padding: var(--padding-sm);
+  background-color: transparent;
+  color: var(--text);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  text-decoration: none;
+  transition: 0.4s;
+}
+.nav-login-isButton:hover {
+  color: var(--hover);
+  filter: brightness(120%);
+}
+
 .main-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
-  background-color: var(--card);
   height: 100%;
   border-radius: var(--radius-sm);
   gap: 30px;
+  grid-area: main;
 }
 
 .add-contact-form {
@@ -94,27 +221,12 @@
   cursor: pointer;
   padding: var(--padding-md);
   font-weight: bold;
-  color: var(--text);
+  color: var(--text-button);
   transition: 0.4s;
 }
 .form-button:hover {
   background-color: var(--hover);
   box-shadow: 0 0 4px 4px rgba(0, 0, 0, 0.1);
-}
-
-.search-input {
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-sm);
-  padding: var(--padding-md);
-  color: var(--text);
-  background-color: var(--input);
-  outline: none;
-  transition: 0.4s;
-  max-width: 420px;
-  width: 100%;
-}
-.search-input:focus {
-  border-color: var(--accent);
 }
 
 .saved-numbers-container {
@@ -139,7 +251,7 @@
   color: var(--text);
   padding: var(--padding-sm);
   font-size: 1rem;
-  border: 1px solid rgba(15 23 43 0.4);
+  border: 1px solid var(--nav-border);
   border-radius: var(--radius-sm);
   transition: 0.4s;
 }
@@ -150,7 +262,7 @@
   cursor: pointer;
   padding: var(--padding-sm);
   font-weight: bold;
-  color: var(--text);
+  color: var(--text-button);
   transition: 0.4s;
 }
 .listButton:hover {
