@@ -1,46 +1,31 @@
 :root {
-    --bg: #020618;
-    --card: #0f172b;
-    --accent: #00a6f4;
-    --hover: #00bcff;
-    --text: #f8fafc;
-    --text-button: #f8fafc;
-
-    --input: #0f172b;
-    --input-border: #314158;
-
-    --nav: rgba(2, 6, 24, 0.4);
-    --nav-border: rgba(255, 255, 255, 0.08);
-
-    --success: #00c950;
-    --error: #fb2c36;
-    --warning: #efb100;
-
-    --padding-sm: 6px;
-    --padding-md: 12px;
-    --padding-lg: 18px;
-
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
+    --star-fill: #f5f5f5;
+    --star-border: #20283b;
+}
+.light {
+    --star-fill: #1a1a1a;
+    --star-border: #e2e8f0;
 }
 
 .login-main {
     display: flex;
     flex-direction: row;
     width: 100%;
-    height: 100%;
-    margin: 32px 48px;
+    flex: 1;
     color: var(--text);
+    box-sizing: border-box;
+    transform: translateY(0);
+    transition: 0.6s
 }
 
 .login-form-outer-container {
     display: flex;
     flex-direction: column;
     gap: 30px;
-    width: 100%;
+    width: 50%;
+    padding: 32px 48px;
     align-items: center;
+    transition: 0.6s;
 }
 
 .isLine {
@@ -63,4 +48,34 @@
 
 .login-form-inner-container input[type='number']::-webkit-inner-spin-button {
     display: none;
+}
+
+.login-inner-container-left {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+.isGradient {
+    background: var(--background-gradient);
+}
+.login-inner-container-logo {
+    padding: var(--padding-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--star-border);
+    background-color: var(--card);
+}
+.login-inner-container-logo svg path {
+    fill: var(--star-fill);
+}
+
+.login-inner-container-isElement {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
 }
