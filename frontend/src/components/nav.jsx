@@ -1,7 +1,9 @@
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 function Nav({ search, setSearch, lightMode, setLightMode }) {
+
+    const location = useLocation()
 
     function Phone() {
         return (
@@ -23,7 +25,7 @@ function Nav({ search, setSearch, lightMode, setLightMode }) {
 
     function Search() {
         return (
-            <label className="nav-search">
+            <label className="nav-search" style={ location.pathname === '/' ? { pointerEvents: "all", opacity: "1" } : { pointerEvents: "none", opacity: "0.3" }}>
                 <input className='search-input' placeholder="" onChange={(e) => {setSearch(e.target.value)}}/>
                 <span>Szukaj kontaktu</span>
             </label>
