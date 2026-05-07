@@ -67,7 +67,7 @@ function Login(lightMode) {
                     <p style={{ transition: "0.6s" }} className={elementsLoaded ? "" : "content-not-loaded-right element-not-loaded-opacity"}>Aby móc czatować ze swoimi znajomymi!</p>
                 </div>
                 <div className="isLine"></div>
-                <form onSubmit={login} className="login-form">
+                <form onSubmit={login} className={ elementsLoaded ? "login-form" : "login-form element-not-loaded-opacity" }>
                     <div className="login-form-inner-container">
                         <label htmlFor='phone'>Numer Telefonu</label>
                         <input className="form-input" name='phone' id='phone' type='number' placeholder='111 222 333' />
