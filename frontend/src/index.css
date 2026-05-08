@@ -42,14 +42,11 @@
   --nav: rgba(248, 250, 252, 0.4);
   --nav-border: rgba(0, 0, 0, 0.08);
 
-  /* --background-gradient: linear-gradient(135deg, #f5f7fa 0%, #dfe9f3 50%, #c3dafe 100%); */
   --background-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
-
-
 }
 
 .main-not-loaded {
-    transform: translateY(-60px) !important;
+  transform: translateY(-60px) !important;
 }
 
 .content-not-loaded-left {
@@ -128,10 +125,12 @@ html, body {
   background-color: var(--nav);
   width: 100%;
   border-bottom: 1px solid var(--nav-border);
-  padding-right: 1.5rem;
+  padding-left: 2rem;
+  padding-right: 2rem;
   position: sticky;
   top: 0;
   height: var(--nav-height);
+  font-size: 1.05rem;
 }
 
 .hasMoreElements {
