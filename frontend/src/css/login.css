@@ -60,6 +60,7 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
+    transition: 1.2s;
 }
 .isGradient {
     background: var(--background-gradient);

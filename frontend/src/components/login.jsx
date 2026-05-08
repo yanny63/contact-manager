@@ -51,13 +51,13 @@ function Login(lightMode) {
     return (
         <div className={mainLoaded ? "login-main" : "login-main main-not-loaded"}>
             <div className="login-form-outer-container">
-                <div className="login-inner-container-left isGradient">
+                <div className={ mainLoaded ? "login-inner-container-left isGradient" : "login-inner-container-left isGradient element-not-loaded-opacity" }>
                     <div style={{ transition: "1s" }} className={ elementsLoaded ? "login-inner-container-logo" : "login-inner-container-logo element-not-loaded-opacity"}> 
                         <StarLogo lightMode={lightMode}></StarLogo>
                     </div>
                     <div className="login-inner-container-isElement">
-                        <h2 style={{ transition: "0.6s" }} className={elementsLoaded ? "" : "content-not-loaded-right element-not-loaded-opacity"}>Contact Manager</h2>
-                        <p style={{ transition: "0.6s" }} className={elementsLoaded ? "" : "content-not-loaded-left element-not-loaded-opacity"}>Wszystko czego potrzebujesz w jednym miejscu.</p>
+                        <h2 style={{ transition: "0.6s" }} className={elementsLoaded ? "" : "content-not-loaded-right element-not-loaded-opacity"}>Linkr</h2>
+                        <p style={{ transition: "0.6s", fontStyle: 'italic' }} className={elementsLoaded ? "" : "content-not-loaded-left element-not-loaded-opacity"}>Wszystko czego potrzebujesz w jednym miejscu.</p>
                     </div>
                 </div>
             </div>
@@ -70,7 +70,7 @@ function Login(lightMode) {
                 <form onSubmit={login} className={ elementsLoaded ? "login-form" : "login-form element-not-loaded-opacity" }>
                     <div className="login-form-inner-container">
                         <label htmlFor='phone'>Numer Telefonu</label>
-                        <input className="form-input" name='phone' id='phone' type='number' placeholder='111 222 333' />
+                        <input className="form-input" name='phone' id='phone' type='number' placeholder='+48 541 926 014' />
                     </div>
                     <div className="login-form-inner-container">
                         <label htmlFor="password">Hasło</label>
