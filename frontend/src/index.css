@@ -5,12 +5,13 @@
     --hover: #00bcff;
     --text: #f8fafc;
     --text-button: #f8fafc;
+    --border: rgba(255, 255, 255, 0.08);
+    --element-hover: rgba(255, 255, 255, 0.05);
 
     --input: #0f172b;
     --input-border: #314158;
 
     --nav: rgba(2, 6, 24, 0.4);
-    --nav-border: rgba(255, 255, 255, 0.08);
 
     --background-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
 
@@ -35,12 +36,13 @@
   --hover: #0069a8;
   --text: #020618;
   --text-button: #f8fafc;
+  --border: rgba(0, 0, 0, 0.08);
+  --element-hover: rgba(0, 0, 0, 0.05);
 
   --input: #e2e8f0;
   --input-border: #cad5e2;
 
   --nav: rgba(248, 250, 252, 0.4);
-  --nav-border: rgba(0, 0, 0, 0.08);
 
   --background-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
 }
@@ -58,6 +60,14 @@
 .element-not-loaded-opacity {
   opacity: 0 !important;
 }
+.nav-not-loaded {
+  transform: translateY(-40px) !important;
+  opacity: 0 !important;
+}
+.aside-not-visible {
+  width: 0% !important;
+  overflow: hidden;
+}
 
 * {
   margin: 0;
@@ -69,8 +79,19 @@ html, body {
   height: 100%;
 }
 #root {
-  min-height: calc(100vh - var(--nav-height));
+  min-height: 100vh;
   background-color: var(--bg);
+}
+
+.app-main {
+  min-height: 100vh;
+  display: grid;
+  grid-template-areas: 
+  "nav nav"
+  "main main" 
+  "footer footer";
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr auto;
 }
 
 .error-container {
@@ -124,13 +145,14 @@ html, body {
   padding: var(--padding-md);
   background-color: var(--nav);
   width: 100%;
-  border-bottom: 1px solid var(--nav-border);
+  border-bottom: 1px solid var(--border);
   padding-left: 2rem;
   padding-right: 2rem;
   position: sticky;
   top: 0;
   height: var(--nav-height);
   font-size: 1.05rem;
+  transition: 0.6s;
 }
 
 .hasMoreElements {
@@ -178,7 +200,6 @@ html, body {
 .search-input {
   outline: none;
   border: none;
-  /* border-radius: var(--radius-sm); */
   padding: var(--padding-sm);
   background-color: transparent;
   border-bottom: 1px solid var(--input-border);
@@ -222,8 +243,7 @@ html, body {
 
 .main-container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row;
   width: 100%;
   height: 100%;
   border-radius: var(--radius-sm);
@@ -236,9 +256,8 @@ html, body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  max-width: 420px;
+  padding: var(--padding-md);
   width: 100%;
-  margin: 24px;
 }
 .add-contact-form h3 {
   color: var(--text);
@@ -258,8 +277,11 @@ html, body {
 .form-input:focus {
   border-color: var(--accent);
 }
+.form-input::-webkit-outer-spin-button, .form-input::-webkit-inner-spin-button {
+  display: none;
+}
 .form-button {
-  width: 140px;
+  width: 100%;
   background-color: var(--accent);
   border: none;
   border-radius: var(--radius-md);
@@ -274,47 +296,102 @@ html, body {
   box-shadow: 0 0 4px 4px rgba(0, 0, 0, 0.1);
 }
 
-.saved-numbers-container {
+.PhoneInput {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  width: 100%;
+  gap: 8px;
 }
-.numbersList {
+
+.PhoneInputInput {
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  padding: var(--padding-md);
+  color: var(--text);
+  background-color: var(--input);
+  outline: none;
+  transition: 0.4s;
+  width: 100%;
+}
+.PhoneInputInput:focus {
+  border-color: var(--accent);
+}
+
+.asideWrapper {
+  position: relative;
+  overflow: visible !important;
+  width: clamp(210px, 20vw, 420px);
+  transition: 1s;
+}
+.home-aside {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  transition: 1s, width 0.8s;
+}
+.aside-close-button {
+  display: none;
+  border: none;
+  background-color: transparent;
+  color: var(--text);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 100%;
+  transition: 1s;
+}
+.aside-close-button svg {
+  animation: svg-open 1s;
+  transition: 1s;
+}
+.aside-button-closed svg {
+  animation: svg-closed 1s;
+  transform: rotate(180deg);
+}
+@keyframes svg-open {
+  from {transform: rotate(180deg)}
+  to {transform: rotate(0)}
+}
+@keyframes svg-closed {
+  from {transform: rotate(0)}
+  to {transform: rotate(180deg)}
+}
+
+.line {
+  width: 100%;
+  height: 1px;
+  background-color: var(--border);
+}
+
+.favourites-container {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  align-items: center;
-  padding: 0;
-  list-style-type: none;
+  padding: var(--padding-md);
 }
-.isNumbersElement {
-  width: 420px;
-  display: flex;
-  flex-direction: row;
-  gap: 14px;
-  align-items: center;
+.favourite {
+  border: 1px solid var(--border);
+  background-color: transparent;
+  cursor: pointer;
   color: var(--text);
   padding: var(--padding-sm);
-  font-size: 1rem;
-  border: 1px solid var(--nav-border);
-  border-radius: var(--radius-sm);
   transition: 0.4s;
 }
-.listButton {
-  background-color: var(--accent);
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  padding: var(--padding-sm);
-  font-weight: bold;
-  color: var(--text-button);
-  transition: 0.4s;
-}
-.listButton:hover {
-  background-color: var(--hover);
-}
-.liListElement {
-  flex: 1;
+.favourite:hover {
+  background-color: var(--element-hover);
 }
 
 
+@media (max-width: 786px) {
+  .nav {
+    gap: 1.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    font-size: 1rem;
+  }
+  .aside-close-button {
+    display: block;
+  }
+} 
