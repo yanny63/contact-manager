@@ -17,7 +17,9 @@ class AuthEssentials:
         expire = datetime.utcnow() + timedelta(minutes=minutes)
         return jwt.encode({
             "sub": str(user.id),
-            "username": str(user.username),
+            "phone": str(user.phone),
             "role": str(user.role),
             "expire": expire
         }, secret_key, algorithm=algorithm)
+    
+    
