@@ -84,17 +84,17 @@ function Form({ search, setSearch }) {
 
 
     return (
-        <div className='main-container'>
+        <div>
             <form className='add-contact-form' onSubmit={addNumber}>
-                <h3>Dodaj Kontakt</h3>
-                <input className='form-input' name='name' placeholder='Imię...' type='text'/>
-                <input className='form-input' name='surname' placeholder='Nazwisko...' type='text'/>
-                <input className='form-input' name='phone' placeholder='Numer telefonu...' type='number'/>
-                <input className='form-input' name='nickname' placeholder='Pseudonim...' type='text'/>
+                <h3>Nowy Kontakt</h3>
+                {/* <input className='form-input' name='name' placeholder='Imię...' type='text'/>
+                <input className='form-input' name='surname' placeholder='Nazwisko...' type='text'/> */}
+                <input className='form-input' name='phone' placeholder='Numer telefonu' type='number'/>
+                <input className='form-input' name='nickname' placeholder='Pseudonim (opcjonalne)' type='text'/>
                 <button className='form-button'>Dodaj</button>
             </form>
 
-            <div className='saved-numbers-container'>
+            {/* <div className='saved-numbers-container'>
                 <ul className='numbersList'>
                 {filteredNumbers.map((number) => (
                     <li className='isNumbersElement' key={number.id}>
@@ -104,14 +104,14 @@ function Form({ search, setSearch }) {
                     </li>
                 ))}
                 </ul>
-            </div>
+            </div> */}
 
-            <div className='error-container'>
+            {/* <div className='error-container'>
                 { error.map((err) => 
                 <div key={err.id} onClick={(e) => {hideError(e)}} >{err.err}</div>
                 
                 )}
-            </div>
+            </div> */}
         </div>
     )
 }

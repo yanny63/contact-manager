@@ -1,11 +1,16 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 
 function Nav({ search, setSearch, lightMode, setLightMode }) {
 
     const location = useLocation()
+    const [ loaded, setLoaded ] = useState(false)
 
-    function Phone() {
+    useEffect(() => {
+        setLoaded(true)
+    }, [])
+
+        function Phone() {
         return (
             <div style={{ display: "flex", gap: '14px', alignItems: "center", color: "var(--text)", fontWeight: "600"}}>
                 <svg className="phoneSvg" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" width={'18px'} xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
@@ -60,17 +65,14 @@ function Nav({ search, setSearch, lightMode, setLightMode }) {
     }
 
     return (
-        <nav className="nav">
+        <nav className={loaded ? "nav" : "nav nav-not-loaded"}>
             <div className="nav-content">
                 <NavLink to='/' style={{ textDecoration: "none" }}><Phone></Phone></NavLink>
-                {/* <Link to='/' className="nav-content-isLink">Kontakty</Link>
-                <Link to='/' className="nav-content-isLink hasMoreElements"><Star></Star> Ulubione</Link> 
-                <Search></Search> */}
             </div>
             <div className="nav-login">
                 <ThemeButton lightMode={lightMode} setLightMode={setLightMode}></ThemeButton>
-                <Link to='/login' className="nav-login-isButton">Zaloguj się</Link>
-                <Link to='/register' className="nav-login-isButton">Zarejestruj się</Link>
+                <NavLink to='/login' className="nav-login-isButton">Zaloguj się</NavLink>
+                <NavLink to='/register' className="nav-login-isButton">Zarejestruj się</NavLink>
             </div>
         </nav>
     )

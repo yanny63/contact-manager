@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import Aside from './home-aside'
+import Aside from './home-aside';
+import { checkToken } from '../ts/api.ts';
 
 function Home({ search, setSearch }) {
 
@@ -28,7 +29,7 @@ function Home({ search, setSearch }) {
         <div className="main-container">
             <div className={asideClosed ? 'asideWrapper aside-not-visible' : 'asideWrapper'}> 
                 <aside className={`${loaded ? 'home-aside' : 'home-aside element-not-loaded-opacity content-not-loaded-left'} ${asideClosed ? 'aside-not-visible' : ''}`}>
-                    <Aside onError={setError} search={search} setSearch={setSearch} />
+                    <Aside onError={setError} search={search} setSearch={setSearch} checkToken={checkToken} />
                 </aside>
                 <AsideCloser></AsideCloser>
             </div>

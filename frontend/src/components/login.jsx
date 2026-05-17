@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { login } from '../ts/api.ts'
 
 function Login(lightMode) {
 
@@ -15,29 +16,29 @@ function Login(lightMode) {
 
     const navigate = useNavigate()
 
-    async function login(e) {
-        e.preventDefault()
-        const data = new FormData(e.target)
-        const user = Object.fromEntries(data)
-        console.log(user)
+    // async function login(e) {
+    //     e.preventDefault()
+    //     const data = new FormData(e.target)
+    //     const user = Object.fromEntries(data)
+    //     console.log(user)
 
-        try {
-            const res = await fetch('/login', {
-                method: "POST",
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(user)
-            })
-            if (!res.ok) {
-                throw new Error(res.details)
-            }
-            const data = await res.json()
-            localStorage.setItem('token', data.access_token)
-            navigate('/')
-        }
-        catch (err) {
-            console.log(`Error - ${err}`)
-        }
-    }
+    //     try {
+    //         const res = await fetch('/login', {
+    //             method: "POST",
+    //             headers: {'Content-Type': ''}, 
+    //             body: user
+    //         })
+    //         if (!res.ok) {
+    //             throw new Error(res.details)
+    //         }
+    //         const data = await res.json()
+    //         localStorage.setItem('token', data.access_token)
+    //         navigate('/')
+    //     }
+    //     catch (err) {
+    //         console.log(`Error - ${err}`)
+    //     }
+    // }
 
     function StarLogo(lightMode) {
         return (
