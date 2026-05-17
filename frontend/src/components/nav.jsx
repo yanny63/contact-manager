@@ -71,8 +71,8 @@ function Nav({ search, setSearch, lightMode, setLightMode }) {
             </div>
             <div className="nav-login">
                 <ThemeButton lightMode={lightMode} setLightMode={setLightMode}></ThemeButton>
-                <NavLink to='/login' className="nav-login-isButton">Zaloguj się</NavLink>
-                <NavLink to='/register' className="nav-login-isButton">Zarejestruj się</NavLink>
+                <NavLink to='/auth/login' className="nav-login-isButton">Zaloguj się</NavLink>
+                <NavLink to='/auth/register' className="nav-login-isButton">Zarejestruj się</NavLink>
             </div>
         </nav>
     )

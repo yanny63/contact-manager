@@ -5,13 +5,15 @@ interface resError {
     status: number
 }
 
-export async function login(username: string, password: string) {
-    if (password.length < 8) return
+export async function login(phone: string, password: string) {
+    if (password.length < 8) {
+        throw new Error('Zbyt słabe hasło')
+    }
     const form = new URLSearchParams()
 
-    form.append('username', username)
+    form.append('phone', phone)
     form.append('password', password)
-
+    
     try {
         const res = await fetch(`${BASE_URL}/login`, {
             method: "POST",
@@ -28,6 +30,7 @@ export async function login(username: string, password: string) {
     }
     catch (err) {
         console.log(err)
+        return false
     }
 }
 

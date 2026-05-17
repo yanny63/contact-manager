@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from '../ts/api.ts'
+import { login } from "../../ts/api";
 
-function Login(lightMode) {
+function Login({ lightMode }) {
 
     const [ mainLoaded, setMainLoaded ] = useState(false)
     const [ elementsLoaded, setElementsLoaded ] = useState(false)
+    const [ loginError, setLoginError ] = useState(false)
 
     useEffect(() => {
         setMainLoaded(true)
@@ -16,29 +17,23 @@ function Login(lightMode) {
 
     const navigate = useNavigate()
 
-    // async function login(e) {
-    //     e.preventDefault()
-    //     const data = new FormData(e.target)
-    //     const user = Object.fromEntries(data)
-    //     console.log(user)
+    interface loginCredentials {
+        phone: string,
+        password: string
+    }
 
-    //     try {
-    //         const res = await fetch('/login', {
-    //             method: "POST",
-    //             headers: {'Content-Type': ''}, 
-    //             body: user
-    //         })
-    //         if (!res.ok) {
-    //             throw new Error(res.details)
-    //         }
-    //         const data = await res.json()
-    //         localStorage.setItem('token', data.access_token)
-    //         navigate('/')
-    //     }
-    //     catch (err) {
-    //         console.log(`Error - ${err}`)
-    //     }
-    // }
+    async function log(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
+        const data = new FormData(e.currentTarget)
+        const credentials : loginCredentials = Object.fromEntries(data) as any
+        const user = await login(credentials.phone, credentials.password)
+        console.log(user)
+        if (!user) {
+            setLoginError(true)
+            return
+        }
+        navigate("/")
+    }  
 
     function StarLogo(lightMode) {
         return (
@@ -68,7 +63,7 @@ function Login(lightMode) {
                     <p style={{ transition: "0.6s" }} className={elementsLoaded ? "" : "content-not-loaded-right element-not-loaded-opacity"}>Aby móc czatować ze swoimi znajomymi!</p>
                 </div>
                 <div className="isLine"></div>
-                <form onSubmit={login} className={ elementsLoaded ? "login-form" : "login-form element-not-loaded-opacity" }>
+                <form onSubmit={log} className={ elementsLoaded ? "login-form" : "login-form element-not-loaded-opacity" }>
                     <div className="login-form-inner-container">
                         <label htmlFor='phone'>Numer Telefonu</label>
                         <input className="form-input" name='phone' id='phone' type='number' placeholder='+48 541 926 014' />

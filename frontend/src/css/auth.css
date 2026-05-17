@@ -7,7 +7,7 @@
     --star-border: #e2e8f0;
 }
 
-.login-main {
+.auth {
     display: flex;
     flex-direction: row;
     width: 100%;
@@ -19,11 +19,29 @@
     transition: 0.6s
 }
 
+.auth-inner {
+    width: 100%;
+    height: 100%;
+}
+
+.login-main {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    color: var(--text);
+    box-sizing: border-box;
+    transform: translateY(0);
+    /* grid-area: main; */
+    transition: 0.6s
+}
+
 .login-form-outer-container {
     display: flex;
     flex-direction: column;
     gap: 30px;
-    width: 50%;
+    width: 100%;
     padding: 32px 48px;
     align-items: center;
     transition: 0.6s;
@@ -81,6 +99,28 @@
     flex-direction: column;
     gap: 6px;
     text-align: center;
+}
+
+.register-main {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    flex: 1;
+    color: var(--text);
+    box-sizing: border-box;
+    transform: translateY(0);
+    height: 100%;
+    transition: 0.6s
+}
+
+.register-form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    width: 100%;
+    padding: 32px 48px;
+    align-items: center;
+    transition: 0.6s;
 }
 
 @media (max-width: 786px) {

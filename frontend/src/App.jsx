@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Nav from './components/nav.jsx'
 import Home from './components/home.jsx'
-import Login from "./components/login.jsx"
+import Auth from "./components/auth.tsx"
 
 
 function App() {
@@ -22,7 +22,7 @@ function App() {
       <Nav lightMode={lightMode} setLightMode={setLightMode} ></Nav>
       <Routes>
         <Route path='/' element={ <Home search={search} setSearch={setSearch} /> } />
-        <Route path='/login' element={ <Login lightMode={lightMode} /> } />
+        <Route path='/auth/:type' element={ <Auth lightMode={lightMode} /> } />
       </Routes>
     </div>
   )
