@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Form
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -33,10 +33,6 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = '.env'
-
-class LoginRequest(BaseModel):
-    phone: str
-    password: str
 
 class User:
     id: int
@@ -88,16 +84,16 @@ def register():
 
 
 @app.post('/login')
-def login(data: LoginRequest, token: str = Depends(oauth_scheme)):
+def login(phone: str = Form(...), password: str = Form(...), token: str = Depends(oauth_scheme)):
     if token:
         raise HTTPException(status_code=403)
     c = db()
     c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
     user = c.execute(
-        "SELECT id, password, role FROM users WHERE phone = %s", (data.phone,)
+        "SELECT id, password, role FROM users WHERE phone = %s", (phone,)
     )
-    if not user or not auth.checkPassword(data.password, user.password):
-        raise HTTPException(status_code=401, details='Złe dane logowania')
+    if not user or not auth.checkPassword(password, user.password):
+        raise HTTPException(status_code=401, detail='Złe dane logowania')
     
     token = auth.createToken(User(user.id, user.phone, user.role))
     return {'access_token': token, 'token_type': 'bearer'}

@@ -1,7 +1,8 @@
 import psycopg2
+from typing import Optional
 
 class DatabaseManagement:
-    def __init__(self, conn, cur):
+    def __init__(self, conn: Optional[psycopg2.extensions.connection] = None, cur: Optional[psycopg2.extensions.cursor] = None):
         self.conn = None
         self.cur = None
         
