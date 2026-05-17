@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { login } from "../../ts/api";
 import PhoneInput from "react-phone-number-input";
 import { parsePhoneNumber } from "react-phone-number-input";
+import { useUser } from "../../contexts/context";
 
 function Login({ lightMode }) {
 
@@ -10,6 +11,8 @@ function Login({ lightMode }) {
     const [ elementsLoaded, setElementsLoaded ] = useState(false)
     const [ loginError, setLoginError ] = useState(false)
     const [ value, setValue ] = useState('')
+
+    const { loadUser } = useUser()
 
     useEffect(() => {
         setMainLoaded(true)
@@ -43,6 +46,7 @@ function Login({ lightMode }) {
             setLoginError(true)
             return
         }
+        await loadUser()
         navigate("/")
     }  
 

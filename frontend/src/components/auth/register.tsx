@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react'
+import { useUser } from '../../contexts/context'
+import PhoneInput from 'react-phone-number-input'
+import { parsePhoneNumber } from 'react-phone-number-input'
+import { register } from '../../ts/api'
+import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 function Register({ lightMode }) {
 
     const [ mainLoaded, setMainLoaded ] = useState(false)
     const [ elementsLoaded, setElementsLoaded ] = useState(false)
     const [ registerError, setRegisterError ] = useState(false)
+    const [ value, setValue ] = useState('')
+
+    const navigator = useNavigate()
 
     useEffect(() => {
         setMainLoaded(true)
@@ -13,9 +22,29 @@ function Register({ lightMode }) {
         }, 400);
     }, [])
 
+    interface Register {
+        phone: string
+        prefix: string
+        password: string
+    }
+
     async function reg(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
-
+        try {
+            const data = new FormData(e.currentTarget)
+            const Form = Object.fromEntries(data)
+            const parsed = parsePhoneNumber(value)
+            const validator = {
+                phone: parsed.nationalNumber,
+                prefix: parsed.countryCallingCode,
+                password: Form.password as string
+            }
+            if (await register(validator.phone, validator.prefix, validator.password) === false) return
+            navigator('/')
+        }    
+        catch (err) {
+            console.log(err)
+        }
     }
 
     function StarLogo(lightMode) {
@@ -38,8 +67,12 @@ function Register({ lightMode }) {
                 <div className="isLine"></div>
                 <form onSubmit={reg} className={ elementsLoaded ? "login-form" : "login-form element-not-loaded-opacity" }>
                     <div className="login-form-inner-container">
-                        <label htmlFor='phone'>Numer Telefonu</label>
-                        <input className="form-input" name='phone' id='phone' type='number' placeholder='+48 541 926 014' />
+                        <PhoneInput 
+                            international 
+                            defaultCountry='PL'
+                            value={value}
+                            onChange={setValue}
+                        />
                     </div>
                     <div className="login-form-inner-container">
                         <label htmlFor="password">Hasło</label>
@@ -47,6 +80,10 @@ function Register({ lightMode }) {
                     </div>
                     <button className="form-button">Zarejestruj się</button>
                 </form>
+                <div className='auth-bottom-text'>
+                    <p>Masz już konto?</p>
+                    <Link to={'/login'} className='auth-link'>Zaloguj się</Link>
+                </div>
             </div>
             <div className="login-form-outer-container">
                 <div className={ mainLoaded ? "login-inner-container-left isGradient" : "login-inner-container-left isGradient element-not-loaded-opacity" }>

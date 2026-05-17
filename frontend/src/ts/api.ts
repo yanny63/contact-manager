@@ -143,3 +143,33 @@ export async function getMe() {
         return null
     }
 }
+
+export async function register(phone: string, prefix: string, password: string) {
+    try {
+        if (localStorage.getItem('token')) {
+            throw new Error('Uzytkownik juz zalogowany')
+        }
+        const urlForm = new URLSearchParams()
+
+        urlForm.append('phone', phone)
+        urlForm.append('prefix', prefix)
+        urlForm.append('password', password)
+
+        const res = await fetch(`${BASE_URL}/register`, {
+            method: "POST",
+            headers: {"Content-Type": "application/x-www-form-urlencoded"},
+            body: urlForm
+        })
+        if (!res.ok) {
+            const data : resError = await res.json()
+            throw new Error(data.error || `Błąd serwera ${data.status}`)
+        }
+        const data = await res.json()
+        localStorage.setItem('token', data.access_token)
+        return true
+    }
+    catch (err) {
+        console.log(err)
+        return false
+    }
+}

@@ -32,7 +32,7 @@
     flex: 1;
     color: var(--text);
     box-sizing: border-box;
-    transform: translateY(0);
+    /* transform: translateY(0); */
     /* grid-area: main; */
     transition: 0.6s
 }
@@ -122,6 +122,24 @@
     align-items: center;
     transition: 0.6s;
 }
+
+.auth-bottom-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+}
+.auth-link {
+    text-decoration: none;
+    color: var(--accent);
+    cursor: pointer;
+    transition: 0.3s;
+}
+.auth-link:hover {
+    color: var(--hover);
+    text-shadow: var(--element-hover);
+}
+
 
 @media (max-width: 786px) {
     .login-main {
