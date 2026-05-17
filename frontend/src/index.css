@@ -340,6 +340,7 @@ html, body {
   top: 50%;
   transform: translateY(-50%);
   left: 100%;
+  cursor: pointer;
   transition: 1s;
 }
 .aside-close-button svg {
@@ -370,13 +371,15 @@ html, body {
   flex-direction: column;
   gap: 4px;
   padding: var(--padding-md);
+  color: var(--text);
 }
 .favourite {
-  border: 1px solid var(--border);
+  border: none;
+  border-radius: var(--radius-md);
   background-color: transparent;
   cursor: pointer;
   color: var(--text);
-  padding: var(--padding-sm);
+  padding: var(--padding-md);
   transition: 0.4s;
 }
 .favourite:hover {

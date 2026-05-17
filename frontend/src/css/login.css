@@ -15,6 +15,7 @@
     color: var(--text);
     box-sizing: border-box;
     transform: translateY(0);
+    grid-area: main;
     transition: 0.6s
 }
 
@@ -29,13 +30,13 @@
 }
 
 .isLine {
-    width: 420px;
+    width: clamp(320px, 30vw, 420px);
     height: 1px;
     background-color: var(--card);
 }
 
 .login-form {
-    width: 420px;
+    width: clamp(320px, 30vw, 420px);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -80,4 +81,18 @@
     flex-direction: column;
     gap: 6px;
     text-align: center;
+}
+
+@media (max-width: 786px) {
+    .login-main {
+        flex-direction: column;
+    }
+
+    .login-form-outer-container {
+        width: 100%;
+    }
+
+    .login-inner-container-left {
+        padding: var(--padding-lg);
+    }
 }

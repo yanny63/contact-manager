@@ -1,0 +1,8 @@
+bcrypt
+fastapi
+uvicorn
+psycopg2-binary
+python-dotenv
+python-jose
+pydantic
+pydantic-settings
