@@ -17,9 +17,9 @@ function Auth({ lightMode }) {
                     <motion.div
                     key='login'
                     className='auth-inner'
-                    initial={{ transform: 'translateX(-80px)' }}
-                    animate={{ transform: 'translateX(0px)' }}
-                    exit={{ transform: 'translateX(-80px)' }}
+                    initial={{ transform: 'translateX(-80px)', opacity: 0 }}
+                    animate={{ transform: 'translateX(0px)', opacity: 1 }}
+                    exit={{ transform: 'translateX(-80px)', opacity: 0 }}
                     transition={{ duration: 0.3 }}>
                         <div className='gradient-container isGradient left'>
 
@@ -30,9 +30,9 @@ function Auth({ lightMode }) {
                     <motion.div
                     key='register'
                     className='auth-inner'
-                    initial={{ transform: 'translateX(80px)' }}
-                    animate={{ transform: 'translateX(0px)' }}
-                    exit={{ transform: 'translateX(80px)' }}
+                    initial={{ transform: 'translateX(80px)', opacity: 0 }}
+                    animate={{ transform: 'translateX(0px)', opacity: 1 }}
+                    exit={{ transform: 'translateX(80px)', opacity: 0 }}
                     transition={{ duration: 0.3 }}>
                         <div className='gradient-container isGradient right'>
 

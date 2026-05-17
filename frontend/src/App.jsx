@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
-import Nav from './components/nav.jsx'
+import Nav from './components/nav.tsx'
 import Home from './components/home.jsx'
 import Auth from "./components/auth.tsx"
 

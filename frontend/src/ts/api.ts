@@ -1,3 +1,5 @@
+import { preinit } from "react-dom"
+
 const BASE_URL = 'http://localhost:8000'
 
 interface resError {
@@ -5,13 +7,14 @@ interface resError {
     status: number
 }
 
-export async function login(phone: string, password: string) {
+export async function login(phone: string, prefix: string, password: string) {
     if (password.length < 8) {
         throw new Error('Zbyt słabe hasło')
     }
     const form = new URLSearchParams()
 
     form.append('phone', phone)
+    form.append('prefix', prefix)
     form.append('password', password)
     
     try {
@@ -116,5 +119,27 @@ export async function getContacts() {
     }
     catch (err) {
         console.log(err)
+    }
+}
+
+export async function getMe() {
+    try {
+        const token = localStorage.getItem('token')
+        if (!token || token === '') {
+            throw new Error('Uzytkownik niezalogowany')
+        }
+        const res = await fetch(`${BASE_URL}/me`, {
+            headers: {'Authorization': `Bearer ${token}`}
+        })
+        if (!res.ok) {
+            const data : resError = await res.json()
+            throw new Error(data.error || `Błąd serwera ${data.status}`)
+        }
+        const user = await res.json()
+        return user
+    }
+    catch (err) {
+        console.log(err)
+        return null
     }
 }

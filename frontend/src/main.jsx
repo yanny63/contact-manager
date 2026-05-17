@@ -4,9 +4,12 @@ import './index.css'
 import './css/auth.css'
 import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom'
+import { UserProvider } from './contexts/context'
 
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
-    <App />
-  </BrowserRouter>,
+    <UserProvider>
+      <App />
+    </UserProvider>
+  </BrowserRouter>
 )

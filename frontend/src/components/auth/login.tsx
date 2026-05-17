@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../../ts/api";
+import PhoneInput from "react-phone-number-input";
+import { parsePhoneNumber } from "react-phone-number-input";
 
 function Login({ lightMode }) {
 
     const [ mainLoaded, setMainLoaded ] = useState(false)
     const [ elementsLoaded, setElementsLoaded ] = useState(false)
     const [ loginError, setLoginError ] = useState(false)
+    const [ value, setValue ] = useState('')
 
     useEffect(() => {
         setMainLoaded(true)
@@ -18,15 +21,23 @@ function Login({ lightMode }) {
     const navigate = useNavigate()
 
     interface loginCredentials {
-        phone: string,
+        phone: string
+        prefix: string
         password: string
     }
 
     async function log(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
+        if (!value) return
         const data = new FormData(e.currentTarget)
-        const credentials : loginCredentials = Object.fromEntries(data) as any
-        const user = await login(credentials.phone, credentials.password)
+        const form = Object.fromEntries(data)
+        const parsedPhone = parsePhoneNumber(value)
+        const credentials : loginCredentials = {
+            phone: parsedPhone.nationalNumber,
+            prefix: parsedPhone.countryCallingCode,
+            password: form.password as string
+        }
+        const user = await login(credentials.phone, credentials.prefix, credentials.password)
         console.log(user)
         if (!user) {
             setLoginError(true)
@@ -65,8 +76,13 @@ function Login({ lightMode }) {
                 <div className="isLine"></div>
                 <form onSubmit={log} className={ elementsLoaded ? "login-form" : "login-form element-not-loaded-opacity" }>
                     <div className="login-form-inner-container">
-                        <label htmlFor='phone'>Numer Telefonu</label>
-                        <input className="form-input" name='phone' id='phone' type='number' placeholder='+48 541 926 014' />
+                        <PhoneInput international 
+                            defaultCountry="PL"
+                            value={value}
+                            onChange={setValue}
+                        />
+                        {/* <label htmlFor='phone'>Numer Telefonu</label>
+                        <input className="form-input" name='phone' id='phone' type='number' placeholder='+48 541 926 014' /> */}
                     </div>
                     <div className="login-form-inner-container">
                         <label htmlFor="password">Hasło</label>

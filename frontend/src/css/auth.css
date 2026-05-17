@@ -135,4 +135,8 @@
     .login-inner-container-left {
         padding: var(--padding-lg);
     }
+
+    .register-main {
+        flex-direction: column;
+    } 
 }

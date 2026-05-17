@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
 function Nav({ search, setSearch, lightMode, setLightMode }) {
 
@@ -73,6 +73,8 @@ function Nav({ search, setSearch, lightMode, setLightMode }) {
                 <ThemeButton lightMode={lightMode} setLightMode={setLightMode}></ThemeButton>
                 <NavLink to='/auth/login' className="nav-login-isButton">Zaloguj się</NavLink>
                 <NavLink to='/auth/register' className="nav-login-isButton">Zarejestruj się</NavLink>
+                
+                {/* { token ? : } */}
             </div>
         </nav>
     )
