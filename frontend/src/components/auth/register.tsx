@@ -80,9 +80,9 @@ function Register({ lightMode }) {
                     </div>
                     <button className="form-button">Zarejestruj się</button>
                 </form>
-                <div className='auth-bottom-text'>
+                <div className={elementsLoaded ? "auth-bottom-text" : "auth-bottom-text element-not-loaded-opacity"}>
                     <p>Masz już konto?</p>
-                    <Link to={'/login'} className='auth-link'>Zaloguj się</Link>
+                    <Link to={'/auth/login'} className='auth-link'>Zaloguj się</Link>
                 </div>
             </div>
             <div className="login-form-outer-container">

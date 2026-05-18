@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useUser } from "../contexts/context";
+import { div } from "framer-motion/client";
 
 function Nav({ search, setSearch, lightMode, setLightMode }) {
 
     const location = useLocation()
     const [ loaded, setLoaded ] = useState(false)
+
+    const { user, logout } = useUser()
 
     useEffect(() => {
         setLoaded(true)
@@ -64,6 +68,22 @@ function Nav({ search, setSearch, lightMode, setLightMode }) {
         )
     }
 
+    const colors = [
+        "#4F6EF7", "#E05A5A", "#2AAA8A", "#D4823A",
+        "#9B59B6", "#1A7FC1", "#27AE60", "#C0392B",
+    ]
+
+    function Avatar() {
+        return (
+            <div style={{ width: '40px', height: '40px', 
+            borderRadius: '50%', background: colors[Math.floor(Math.random() * colors.length)],
+            display: 'flex', alignItems: 'center', justifyContent: 'center', 
+            fontSize: 40 * 0.35, fontWeight: 500, color: "#fff", cursor: 'pointer'}}>
+                { '+' + user.prefix }
+            </div>
+        )
+    }
+
     return (
         <nav className={loaded ? "nav" : "nav nav-not-loaded"}>
             <div className="nav-content">
@@ -71,10 +91,16 @@ function Nav({ search, setSearch, lightMode, setLightMode }) {
             </div>
             <div className="nav-login">
                 <ThemeButton lightMode={lightMode} setLightMode={setLightMode}></ThemeButton>
-                <NavLink to='/auth/login' className="nav-login-isButton">Zaloguj się</NavLink>
-                <NavLink to='/auth/register' className="nav-login-isButton">Zarejestruj się</NavLink>
                 
-                {/* { token ? : } */}
+                
+                { user ? 
+                    <>
+                       { user.avatar ?  <img src={user.avatar }></img> : <Avatar /> }
+                    </>
+                : <>
+                    <NavLink to='/auth/login' className="nav-login-isButton">Zaloguj się</NavLink>
+                    <NavLink to='/auth/register' className="nav-login-isButton">Zarejestruj się</NavLink>
+                </>}
             </div>
         </nav>
     )

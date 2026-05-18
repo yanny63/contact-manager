@@ -34,9 +34,10 @@ class Settings(BaseSettings):
     class Config:
         env_file = '.env'
 
-class User:
+class User(BaseModel):
     id: int
     phone: str
+    prefix: str
     role: str
     picture: Optional[str] = None
     isActive: Optional[bool] = None
@@ -50,52 +51,91 @@ class Contact(BaseModel):
 settings = Settings()
 oauth_scheme = OAuth2PasswordBearer(tokenUrl='token', auto_error=False)
 
-async def getCurrentUser(token: str = Depends(oauth_scheme)):
-    c = db()
-    c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
+# async def getCurrentUser(token: str = Depends(oauth_scheme)):
+#     c = db()
+#     c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
     
-    exception = HTTPException(status_code=401, detail='Błąd podczas próby weryfikacji danych uwierzytelniających', headers={'WWW-Authenticate': 'Bearer'})
+#     exception = HTTPException(status_code=401, detail='Błąd podczas próby weryfikacji danych uwierzytelniających', headers={'WWW-Authenticate': 'Bearer'})
 
+#     try:
+#         payload = jwt.decode(token, settings.secret_key, settings.algorithm)
+#         phone = payload.get('sub')
+#         if phone is None:
+#             raise exception
+#         print(phone)
+
+#         from_db = c.execute(
+#             "SELECT id, phone, role, picture, isActive FROM users WHERE phone = %s", 
+#             (phone,)
+#         )
+#         user = User(**from_db)
+#         return user
+
+#     except JWTError:
+#         raise exception
+    
+# async def isActive(user: User = Depends(getCurrentUser)) -> User:
+#     if not user.isActive:
+#         raise HTTPException(status_code=400, detail='Nieaktywne konto')
+#     return user
+
+@app.get("/me")
+def me(token: str = Depends(oauth_scheme)):
+    if not token:
+        raise HTTPException(status_code=404)
     try:
+        c = db()
+        c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
         payload = jwt.decode(token, settings.secret_key, settings.algorithm)
-        phone = payload.get('sub')
-        if phone is None:
-            raise exception
-        print(phone)
-
-        from_db = c.execute(
-            "SELECT id, phone, role, picture, isActive FROM users WHERE phone = %s", 
-            (phone,)
+        user_id = payload.get('sub')
+        user = c.execute(
+            "SELECT id, phone, prefix, picture FROM users WHERE isActive = %s AND id = %s", (True, user_id)
         )
-        user = User(**from_db)
+        c.close()
         return user
-
     except JWTError:
-        raise exception
-    
-async def isActive(user: User = Depends(getCurrentUser)) -> User:
-    if not user.isActive:
-        raise HTTPException(status_code=400, detail='Nieaktywne konto')
-    return user
+        raise HTTPException(status_code=401)
 
 @app.post('/register')
-def register():
-    pass
-
-
-@app.post('/login')
-def login(phone: str = Form(...), password: str = Form(...), token: str = Depends(oauth_scheme)):
+def register(prefix: str = Form(...), phone: str = Form(...), password: str = Form(...), token: str = Depends(oauth_scheme)):
     if token:
         raise HTTPException(status_code=403)
     c = db()
     c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
     user = c.execute(
-        "SELECT id, password, role FROM users WHERE phone = %s", (phone,)
+        "SELECT id FROM users WHERE phone = %s", (phone,)
     )
-    if not user or not auth.checkPassword(password, user.password):
-        raise HTTPException(status_code=401, detail='Złe dane logowania')
+    if user: 
+        c.close()
+        raise HTTPException(status_code=409, detail="Uzytkownik juz istnieje")
+    hashed = auth.hashPassword(password)
+    u = c.execute(
+        "INSERT INTO users (phone, password, prefix) VALUES (%s, %s, %s) RETURNING id, role", 
+        (phone, auth.toDB(hashed), prefix)
+    )[0]
+    u['phone'] = phone
+    u['prefix'] = prefix
+    c.close()
+    user = User(**u)
+    token = auth.createToken(user, settings.access_token_expire_minutes, settings.algorithm, settings.secret_key)
+    return {"access_token": token}
     
-    token = auth.createToken(User(user.id, user.phone, user.role))
+
+
+@app.post('/login')
+def login(phone: str = Form(...), prefix: str = Form(...), password: str = Form(...), token: str = Depends(oauth_scheme)):
+    if token:
+        raise HTTPException(status_code=403)
+    c = db()
+    c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
+    user = c.execute(
+        "SELECT id, phone, prefix, password, role FROM users WHERE phone = %s", (phone,)
+    )
+    print(user)
+    c.close()
+    if not user or not auth.checkPassword(password, user.get('password')):
+        raise HTTPException(status_code=401, detail='Złe dane logowania')
+    token = auth.createToken(User(**user), settings.access_token_expire_minutes, settings.algorithm, settings.secret_key)
     return {'access_token': token, 'token_type': 'bearer'}
 
 @app.post('/API/newContact')
@@ -112,6 +152,7 @@ def newContact(contact: Contact, status_code=201, token: str = Depends(oauth_sch
         "SELECT id FROM contacts WHERE user_id = %s AND phone = %s",
         (contact.user_id, contact.phone)
     )
+    c.close()
     contact.id = row['id']
     return contact
     
@@ -131,5 +172,6 @@ def contacts(token: str = Depends(oauth_scheme)):
         JOIN contacts ON users.id = contacts.user_id 
         WHERE users.phone = %s""", (phone,)
     )
+    c.close()
     print(data)
     return data

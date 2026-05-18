@@ -4,6 +4,7 @@ import { login } from "../../ts/api";
 import PhoneInput from "react-phone-number-input";
 import { parsePhoneNumber } from "react-phone-number-input";
 import { useUser } from "../../contexts/context";
+import { Link } from "react-router-dom";
 
 function Login({ lightMode }) {
 
@@ -94,6 +95,10 @@ function Login({ lightMode }) {
                     </div>
                     <button className="form-button">Zaloguj się</button>
                 </form>
+                <div className={elementsLoaded ? "auth-bottom-text" : "auth-bottom-text element-not-loaded-opacity"}>
+                    <p>Nie posiadasz konta?</p>
+                    <Link to={'/auth/register'} className='auth-link'>Zarejestruj się</Link>
+                </div>
             </div>
         </div>
     )

@@ -32,15 +32,15 @@ class DatabaseManagement:
         cur = self.cur
         try:
             cur.execute(query, params)
+            result = None
             if cur.description:
-                result = cur.fetchall()
-                return self.zipper(cur, result)
-            
+                result =  self.zipper(self.cur, cur.fetchall())
             conn.commit()
-            return None
+            return result
         except Exception as e:
             conn.rollback()
             raise e
-        finally:
-            cur.close()
-            conn.close()
+
+    def close(self):
+        self.conn.close()
+        self.cur.close()

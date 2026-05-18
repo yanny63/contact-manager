@@ -9,17 +9,20 @@ class AuthEssentials:
         return bcrypt.hashpw(password.encode(), salt)
 
     @staticmethod 
-    def checkPassword(password, hashed) -> bool:
-        return bcrypt.checkpw(password, hashed)
+    def checkPassword(password: str, hashed: str) -> bool:
+        return bcrypt.checkpw(password.encode(), hashed.encode())
+
+    @staticmethod
+    def toDB(password: bytes) -> str: 
+        return password.decode()
     
     @staticmethod 
     def createToken(user: object, minutes: int, algorithm: str, secret_key: str) -> str:
         expire = datetime.utcnow() + timedelta(minutes=minutes)
         return jwt.encode({
-            "sub": str(user.id),
-            "phone": str(user.phone),
-            "role": str(user.role),
-            "expire": expire
-        }, secret_key, algorithm=algorithm)
-    
-    
+                "sub": str(user.id),
+                "phone": str(user.phone),
+                "prefix": str(user.prefix),
+                "role": str(user.role),
+                "expire": str(expire)
+            }, secret_key, algorithm=algorithm)
