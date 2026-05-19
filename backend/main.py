@@ -16,7 +16,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['http://localhost:5173'],
+    allow_origins=['*'],
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*']
@@ -45,39 +45,12 @@ class User(BaseModel):
 class Contact(BaseModel):
     user_id: int
     phone: str
+    prefix: str
     nickname: str
     id: int | None = None
 
 settings = Settings()
 oauth_scheme = OAuth2PasswordBearer(tokenUrl='token', auto_error=False)
-
-# async def getCurrentUser(token: str = Depends(oauth_scheme)):
-#     c = db()
-#     c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
-    
-#     exception = HTTPException(status_code=401, detail='Błąd podczas próby weryfikacji danych uwierzytelniających', headers={'WWW-Authenticate': 'Bearer'})
-
-#     try:
-#         payload = jwt.decode(token, settings.secret_key, settings.algorithm)
-#         phone = payload.get('sub')
-#         if phone is None:
-#             raise exception
-#         print(phone)
-
-#         from_db = c.execute(
-#             "SELECT id, phone, role, picture, isActive FROM users WHERE phone = %s", 
-#             (phone,)
-#         )
-#         user = User(**from_db)
-#         return user
-
-#     except JWTError:
-#         raise exception
-    
-# async def isActive(user: User = Depends(getCurrentUser)) -> User:
-#     if not user.isActive:
-#         raise HTTPException(status_code=400, detail='Nieaktywne konto')
-#     return user
 
 @app.get("/me")
 def me(token: str = Depends(oauth_scheme)):
@@ -145,8 +118,8 @@ def newContact(contact: Contact, status_code=201, token: str = Depends(oauth_sch
     c = db()
     c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
     c.execute(
-        "INSERT INTO contacts (user_id, phone, nickname) VALUES (%s, %s, %s)", 
-        (contact.user_id, contact.phone, contact.nickname)
+        "INSERT INTO contacts (user_id, phone, prefix, nickname) VALUES (%s, %s, %s, %s)", 
+        (contact.user_id, contact.phone, contact.prefix, contact.nickname)
     )
     row = c.execute(
         "SELECT id FROM contacts WHERE user_id = %s AND phone = %s",
@@ -155,6 +128,28 @@ def newContact(contact: Contact, status_code=201, token: str = Depends(oauth_sch
     c.close()
     contact.id = row['id']
     return contact
+
+@app.put('/API/unfavourite')
+def unfavourite(contact_id: str = Form(...), token: str = Depends(oauth_scheme)):
+    if not token or token is None:
+        raise HTTPException(status_code=401)
+    if not contact_id:
+        raise HTTPException(status_code=400)
+    
+
+    try:
+        payload = jwt.decode(token, settings.secret_key, settings.algorithm)
+        user_id = payload.get('sub')
+        c = db()
+        c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
+        c.execute(
+            "UPDATE contacts SET favourite = %s WHERE id = %s, user_id = %s", (False, contact_id, user_id)
+        )
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=e)
+    finally: 
+        c.close()
     
 @app.get('/API/contacts')
 def contacts(token: str = Depends(oauth_scheme)):
@@ -167,7 +162,7 @@ def contacts(token: str = Depends(oauth_scheme)):
     c = db()
     c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
     data = c.execute(
-        """SELECT contacts.phone, contacts.nickname, contacts.picture, contacts.favourite 
+        """SELECT contacts.id, contacts.phone, contacts.prefix, contacts.nickname, contacts.picture, contacts.favourite 
         FROM users 
         JOIN contacts ON users.id = contacts.user_id 
         WHERE users.phone = %s""", (phone,)

@@ -3,7 +3,7 @@ import { preinit } from "react-dom"
 const BASE_URL = 'http://192.168.1.34:8000'
 
 interface resError {
-    error?: string
+    detail?: string
     status: number
 }
 
@@ -25,7 +25,7 @@ export async function login(phone: string, prefix: string, password: string) {
         })
         if (!res.ok) {
             const data : resError = await res.json()
-            throw new Error(data.error || `Błąd serwera ${data.status}`)
+            throw new Error(data.detail || `Błąd serwera ${data.status}`)
         }
         const data = await res.json()
         localStorage.setItem('token', data.access_token)
@@ -57,7 +57,7 @@ export async function checkToken() {
         }
         else if (!res.ok) {
             const data : resError = await res.json()
-            throw new Error(data.error || `Błąd serwera ${data.status}`)
+            throw new Error(data.detail || `Błąd serwera ${data.status}`)
         }
         const data = await res.json()
         if (!data) return false
@@ -90,7 +90,12 @@ export async function newContact(contact: object) {
         })
         if (!res.ok) {
             const data : resError = await res.json()
-            throw new Error(data.error || `Błąd serwera ${data.status}`)
+
+            if (res.status === 422) {
+                const messages = 'Nieprawidłowe dane'
+                throw new Error(messages)
+            }
+            throw new Error(data.detail || `Błąd serwera ${data.status}`)
         }
         return true
     }
@@ -112,13 +117,42 @@ export async function getContacts() {
         })
         if (!res.ok) {
             const data : resError = await res.json()
-            throw new Error(data.error || `Błąd serwera ${data.status}`)
+            throw new Error(data.detail || `Błąd serwera ${data.status}`)
         }
         const data = await res.json()
         return data
     }
     catch (err) {
         console.log(err)
+    }
+}
+
+export async function unfavourite(id: number) {
+    try {
+        const token = localStorage.getItem('token')
+        if (!token) {
+            throw new Error('Uzytkownik niezalogowany')
+        }
+        const Form = new URLSearchParams()
+
+        Form.append('contact_id', String(id))
+
+        const res = await fetch(`${BASE_URL}/API/unfavourite`, {
+            method: "PUT",
+            headers: {'Content-Type': 'application/w-xxx-form-urlencoded',
+                'Authorization': `Bearer ${token}`
+            },
+            body: Form
+        })
+        if (!res.ok) {
+            const data : resError = await res.json()
+            throw new Error(data.detail || `Błąd serwera ${data.status}`)
+        }
+        return true
+    }
+    catch (err) {
+        console.log(err)
+        return false
     }
 }
 
@@ -133,7 +167,7 @@ export async function getMe() {
         })
         if (!res.ok) {
             const data : resError = await res.json()
-            throw new Error(data.error || `Błąd serwera ${data.status}`)
+            throw new Error(data.detail || `Błąd serwera ${data.status}`)
         }
         const user = await res.json()
         return user
@@ -162,7 +196,7 @@ export async function register(phone: string, prefix: string, password: string) 
         })
         if (!res.ok) {
             const data : resError = await res.json()
-            throw new Error(data.error || `Błąd serwera ${data.status}`)
+            throw new Error(data.detail || `Błąd serwera ${data.status}`)
         }
         const data = await res.json()
         localStorage.setItem('token', data.access_token)

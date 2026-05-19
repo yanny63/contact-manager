@@ -1,33 +1,28 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, forwardRef } from "react"
 import PhoneInput from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
-import { newContact, getContacts } from "../ts/api"
+import { newContact, getContacts, unfavourite } from "../ts/api"
 
 function Aside({ search, setSearch, onError, checkToken }) {
-    const [ numbers, setNumbers ] = useState([])
+
+    interface NumberType {
+        id: number
+        phone: string
+        prefix: string
+        nickname: string
+        avatar?: string 
+        favourite: boolean
+    }
+
+    const [ numbers, setNumbers ] = useState<NumberType[]>([])
     const [ value, setValue ] = useState('')
+    const [ favourites, setFavourites ] = useState([])
+    const [ newContactError, setNewContactError ] = useState(false)
+    const [ favError, setFavError ] = useState(false)
 
     useEffect(() => {
         getContacts()
     }, [])
-
-    function removeContact(id: number) {
-        setNumbers(n => n.filter(number => number.id !== id)
-    )}
-
-    function toggleFav(id) {
-        setNumbers(numb =>
-            numb.map(item => 
-              item.id === id ? {...item, fav: !item.fav}
-              : item
-            )
-        )
-    }
-
-    const filteredNumbers = numbers.filter(n => 
-        n.phone.includes(search) || 
-        n.nickname.includes(search)
-    ).sort((a, b) => b.fav - a.fav)
 
     function hideError(e) {
         e.target.remove()
@@ -84,39 +79,50 @@ function Aside({ search, setSearch, onError, checkToken }) {
         status: number
     }
 
-    function addContact(e) {
-        const data = new FormData(e.target)
+    async function addContact(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
+        const data = new FormData(e.currentTarget)
         const contact = Object.fromEntries(data) as any
         contact['favourite'] = false
-        if (newContact(contact)) {
-
+        if (await newContact(contact)) {
+            setNumbers([...numbers, contact])
+            e.currentTarget.reset()
+            setNewContactError(false)
         }
         else {
-
+            setNewContactError(true)
         }
     }
 
-    const [ favourites, setFavourites ] = useState([])
-
-    async function getFavourites() {
-        try {
-            const res = await fetch('', {
-                headers: {'Content-Type': 'application/json', 
-                    'Authorizatiom': `Bearer ${localStorage.getItem('token')}`
-                }
-            })
-            if (!res.ok) {
-                const data : resError = await res.json()
-                throw new Error(data.error || `Błąd serwera ${data.status}`)
-            }
-            const data = await res.json() // Dokonczyc aside
-        }
-        catch (err) {
-            onError(err)
+    async function unfav(id: number) {
+        const isOk = await unfavourite(id)
+        if (!isOk) {
+            setFavError(true)
         }
     }
+    // DOKONCZYC OBIE FUNKCJE I ERRORY
+    async function toggleFav(id: number) {
 
+    }
 
+    function Favourites() {
+        const favs = numbers.filter(n => n.favourite)
+        return (
+            <ul className="numbersList">
+                { favs.map((fav) => (
+                    <li className="isNumbersElement" key={fav.id}>
+                        <span className="liListElement">{fav.nickname ? fav.nickname : `+${fav.prefix} ${fav.phone}`}</span>
+                        <button className="listButton" onClick={() => unfav(fav.id)}></button>
+                        <Star active={fav.favourite} onClick={() => toggleFav(fav.id)}></Star> 
+                    </li>
+                ))}
+            </ul>
+        )
+    }
+
+    const phoneInnerInput = forwardRef(({ className, ...props }: any, ref) => (
+        <input className={newContactError ? 'PhoneInputInput contactError' : 'PhoneInputInput'} {...props} ref={ref} />
+    ))
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
@@ -127,15 +133,15 @@ function Aside({ search, setSearch, onError, checkToken }) {
                     defaultCountry='PL'
                     value={value}
                     onChange={setValue}
+                    inputComponent={phoneInnerInput}
                 />
-                {/* <input className='form-input' name='phone' placeholder='Numer telefonu' type='number'/> */}
                 <input className='form-input' name='nickname' placeholder='Pseudonim (opcjonalne)' type='text'/>
                 <button className='form-button'>Dodaj</button>
             </form>
             <div className="line"></div>
             <div className="favourites-container">
                 <h3>Ulubione</h3>
-                {numbers.filter(numb => numb.fav).map((n) => 
+                {numbers.filter(numb => numb.favourite).map((n) => 
                     <div key={n.id} className="favourite">
                         <div className="fav_image">
                             { n.avatar ? <img src={n.avatar} alt='Avatar'/> : <Avatar name={n.nickname ?? ''}></Avatar>}
@@ -146,27 +152,6 @@ function Aside({ search, setSearch, onError, checkToken }) {
                     </div>
                 )}
             </div>
-
-            
-            {/* <div className='saved-numbers-container'>
-                
-                <ul className='numbersList'>
-                {filteredNumbers.map((number) => (
-                    <li className='isNumbersElement' key={number.id}>
-                    <span className='liListElement'>{ number.nickname ? number.nickname : number.name + " " + number.surname}  - {number.phone}</span>
-                    <button className='listButton' onClick={() => {removeContact(number.id)}}>Usuń</button>
-                    <Star active={number.fav} onClick={() => toggleFav(number.id)}></Star>  
-                    </li>
-                ))}
-                </ul>
-            </div> */}
-
-            {/* <div className='error-container'>
-                { error.map((err) => 
-                <div key={err.id} onClick={(e) => {hideError(e)}} >{err.err}</div>
-                
-                )}
-            </div> */}
         </div>
     )
 }

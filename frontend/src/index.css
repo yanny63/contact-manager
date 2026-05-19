@@ -303,6 +303,10 @@ html, body {
   gap: 8px;
 }
 
+.contactError {
+  box-shadow: 0 0 5px 0.5px rgba(251, 44, 54, 1);
+}
+
 .PhoneInputInput {
   border: 1px solid var(--input-border);
   border-radius: var(--radius-sm);
