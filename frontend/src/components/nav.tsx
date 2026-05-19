@@ -8,10 +8,11 @@ function Nav({ search, setSearch, lightMode, setLightMode }) {
     const location = useLocation()
     const [ loaded, setLoaded ] = useState(false)
 
-    const { user, logout } = useUser()
+    const { user, loadUser, logout } = useUser()
 
     useEffect(() => {
         setLoaded(true)
+        loadUser()
     }, [])
 
         function Phone() {

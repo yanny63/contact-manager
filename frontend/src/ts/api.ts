@@ -1,6 +1,6 @@
 import { preinit } from "react-dom"
 
-const BASE_URL = 'http://localhost:8000'
+const BASE_URL = 'http://192.168.1.34:8000'
 
 interface resError {
     error?: string
