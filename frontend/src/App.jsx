@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
+import { Guest, Protected } from './contexts/protected.js'
 import Nav from './components/nav.tsx'
 import Home from './components/home.jsx'
 import Auth from "./components/auth.tsx"
@@ -21,8 +22,11 @@ function App() {
     <div className='app-main'>
       <Nav lightMode={lightMode} setLightMode={setLightMode} ></Nav>
       <Routes>
-        <Route path='/' element={ <Home search={search} setSearch={setSearch} /> } />
-        <Route path='/auth/:type' element={ <Auth lightMode={lightMode} /> } />
+        <Route path='/' element={ <Home search={search} setSearch={setSearch} /> } /> 
+        <Route path='/auth/:type' element={ 
+          <Guest>
+            <Auth lightMode={lightMode} />
+          </Guest>} />
       </Routes>
     </div>
   )
