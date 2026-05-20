@@ -43,11 +43,11 @@ class User(BaseModel):
     isActive: Optional[bool] = None
 
 class Contact(BaseModel):
-    user_id: int
     phone: str
     prefix: str
     nickname: str
     id: int | None = None
+    favourite: Optional[bool] = False
 
 settings = Settings()
 oauth_scheme = OAuth2PasswordBearer(tokenUrl='token', auto_error=False)
@@ -85,7 +85,7 @@ def register(prefix: str = Form(...), phone: str = Form(...), password: str = Fo
     u = c.execute(
         "INSERT INTO users (phone, password, prefix) VALUES (%s, %s, %s) RETURNING id, role", 
         (phone, auth.toDB(hashed), prefix)
-    )[0]
+    )
     u['phone'] = phone
     u['prefix'] = prefix
     c.close()
@@ -115,15 +115,24 @@ def login(phone: str = Form(...), prefix: str = Form(...), password: str = Form(
 def newContact(contact: Contact, status_code=201, token: str = Depends(oauth_scheme)):
     if not token or token is None:
         raise HTTPException(status_code=401, detail="Wymagane zalogwanie")
+    payload = jwt.decode(token, settings.secret_key, settings.algorithm)
     c = db()
     c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
+    user = c.execute(
+        "SELECT id FROM users WHERE phone = %s", (contact.phone,)
+    )
+    added = c.execute(
+        "SELECT id FROM users WHERE phone = %s AND prefix = %s", (contact.phone, contact.prefix)
+    )
+    if not user or not added:
+        raise HTTPException(status_code=404, detail='Taki numer nie istnieje')
     c.execute(
-        "INSERT INTO contacts (user_id, phone, prefix, nickname) VALUES (%s, %s, %s, %s)", 
-        (contact.user_id, contact.phone, contact.prefix, contact.nickname)
+        "INSERT INTO contacts (owner_id, contact_id, nickname, favourite) VALUES (%s, %s, %s, %s)", 
+        (payload.get('sub'), added.id, contact.nickname, contact.favourite)
     )
     row = c.execute(
-        "SELECT id FROM contacts WHERE user_id = %s AND phone = %s",
-        (contact.user_id, contact.phone)
+        "SELECT id FROM contacts WHERE owner_id = %s AND contact_id = %s",
+        (payload.get('sub'), added.id)
     )
     c.close()
     contact.id = row['id']
@@ -135,15 +144,13 @@ def unfavourite(contact_id: str = Form(...), token: str = Depends(oauth_scheme))
         raise HTTPException(status_code=401)
     if not contact_id:
         raise HTTPException(status_code=400)
-    
-
     try:
         payload = jwt.decode(token, settings.secret_key, settings.algorithm)
         user_id = payload.get('sub')
         c = db()
         c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
         c.execute(
-            "UPDATE contacts SET favourite = %s WHERE id = %s, user_id = %s", (False, contact_id, user_id)
+            "UPDATE contacts SET favourite = %s WHERE id = %s AND owner_id = %s", (False, contact_id, user_id)
         )
     except Exception as e:
         print(e)
@@ -156,17 +163,23 @@ def contacts(token: str = Depends(oauth_scheme)):
     if not token or token is None:
         raise HTTPException(status_code=401, detail="Uzytkownik niezalogowany")
     payload = jwt.decode(token, settings.secret_key, settings.algorithm)
-    phone = payload.get('sub')
-    if not phone:
+    user_id = payload.get('sub')
+    if not user_id:
         raise HTTPException(status_code=401)
     c = db()
     c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
     data = c.execute(
-        """SELECT contacts.id, contacts.phone, contacts.prefix, contacts.nickname, contacts.picture, contacts.favourite 
-        FROM users 
-        JOIN contacts ON users.id = contacts.user_id 
-        WHERE users.phone = %s""", (phone,)
+        """SELECT contacts.id, contacts.contact_id, contacts.nickname, contacts.picture, contacts.favourite,
+                contact_user.phone, contact_user.prefix
+        FROM contacts
+        JOIN users AS owner         ON owner.id        = contacts.owner_id
+        JOIN users AS contact_user  ON contact_user.id = contacts.contact_id
+        WHERE owner.id = %s""",
+        (user_id,)
     )
     c.close()
+    if isinstance(data, list):
+        return data
     print(data)
-    return data
+    dataToList = [data]
+    return dataToList
