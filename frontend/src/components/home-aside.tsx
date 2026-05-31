@@ -1,9 +1,10 @@
 import { useState, useEffect, forwardRef } from "react"
 import PhoneInput from 'react-phone-number-input'
+import { parsePhoneNumber } from "react-phone-number-input"
 import 'react-phone-number-input/style.css'
 import { newContact, getContacts, unfavourite } from "../ts/api"
 
-function Aside({ search, setSearch, onError, checkToken }) {
+function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Avatar }) {
 
     interface NumberType {
         id: number
@@ -14,15 +15,18 @@ function Aside({ search, setSearch, onError, checkToken }) {
         favourite: boolean
     }
 
-    const [ numbers, setNumbers ] = useState<NumberType[]>([])
     const [ value, setValue ] = useState('')
     const [ favourites, setFavourites ] = useState([])
     const [ newContactError, setNewContactError ] = useState(false)
     const [ favError, setFavError ] = useState(false)
 
     useEffect(() => {
-        getContacts()
-    }, [])
+        const contactsGetter = async () => {
+            const numbersFromBackend  = await getContacts() as NumberType[]
+            setNumbers(numbersFromBackend)
+        }
+        contactsGetter()
+    }, [setNumbers])
 
     function hideError(e) {
         e.target.remove()
@@ -43,37 +47,6 @@ function Aside({ search, setSearch, onError, checkToken }) {
         )
     }
 
-    const colors = [
-        "#4F6EF7", "#E05A5A", "#2AAA8A", "#D4823A",
-        "#9B59B6", "#1A7FC1", "#27AE60", "#C0392B",
-    ]
-
-    function getInitials(name) {
-        const parts = name.trim().split(" ")
-        if (parts[0].startsWith("+")) return "#"
-        if (parts.length === 1) return parts[0][0].toUpperCase()
-        return (parts[0][0] + parts.at(-1)[0]).toUpperCase()
-    }
-
-    function getColor(name) {
-        let hash = 0
-        for (const c of name) hash = (hash * 31 + c.CharCodeAt(0)) & 0xffff
-        return colors[hash % colors.length]
-    }
-
-    function Avatar({ name, size = 40}) {
-        return (
-            <div style={{
-                width: size, height: size, borderRadius: "50%",
-                background: getColor(name),
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: size * 0.35, fontWeight: 500, color: "#fff",
-            }}>
-                {getInitials(name)}
-            </div>
-        )
-    }
-
     interface resError {
         error: string,
         status: number
@@ -81,13 +54,21 @@ function Aside({ search, setSearch, onError, checkToken }) {
 
     async function addContact(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
+
+        const form = e.currentTarget
+
         const data = new FormData(e.currentTarget)
         const contact = Object.fromEntries(data) as any
-        contact['favourite'] = false
+        const parsed = parsePhoneNumber(value)
+        contact['phone'] = parsed.nationalNumber
+        contact['prefix'] = parsed.countryCallingCode
+        contact['favourite'] = data.get('favourite') === 'on'
+        console.log(contact)
         if (await newContact(contact)) {
             setNumbers([...numbers, contact])
-            e.currentTarget.reset()
             setNewContactError(false)
+            form.reset()
+            setValue('')
         }
         else {
             setNewContactError(true)
@@ -98,31 +79,38 @@ function Aside({ search, setSearch, onError, checkToken }) {
         const isOk = await unfavourite(id)
         if (!isOk) {
             setFavError(true)
+            return
         }
+        setFavourites(prev => prev.filter(number => number.id !== id ))
+        setFavError(false)
     }
-    // DOKONCZYC OBIE FUNKCJE I ERRORY
-    async function toggleFav(id: number) {
-
+    
+    async function toggleFav(id: number, type: string) {
+        if (type === 'favourites') {
+            await unfav(id)
+        }
     }
 
     function Favourites() {
+        if (!numbers || numbers[0] === null || numbers.length === 0) {
+            return
+        }
         const favs = numbers.filter(n => n.favourite)
         return (
             <ul className="numbersList">
                 { favs.map((fav) => (
                     <li className="isNumbersElement" key={fav.id}>
-                        <span className="liListElement">{fav.nickname ? fav.nickname : `+${fav.prefix} ${fav.phone}`}</span>
-                        <button className="listButton" onClick={() => unfav(fav.id)}></button>
-                        <Star active={fav.favourite} onClick={() => toggleFav(fav.id)}></Star> 
+                        <div className="fav_image">
+                            { fav.avatar ? <img src={fav.avatar} className="" /> : <Avatar name={fav.nickname ? fav.nickname : fav.phone} />}
+                        </div>
+                        <span className="liListElement">{fav.nickname ? fav.nickname.slice(0, 30) : `+${fav.prefix} ${fav.phone}`}</span>
+                        <Star active={fav.favourite} onClick={() => toggleFav(fav.id, "favourites")}></Star> 
                     </li>
                 ))}
             </ul>
         )
     }
 
-    const phoneInnerInput = forwardRef(({ className, ...props }: any, ref) => (
-        <input className={newContactError ? 'PhoneInputInput contactError' : 'PhoneInputInput'} {...props} ref={ref} />
-    ))
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
@@ -133,24 +121,19 @@ function Aside({ search, setSearch, onError, checkToken }) {
                     defaultCountry='PL'
                     value={value}
                     onChange={setValue}
-                    inputComponent={phoneInnerInput}
                 />
                 <input className='form-input' name='nickname' placeholder='Pseudonim (opcjonalne)' type='text'/>
+                <input type="checkbox" name="favourite" hidden id="favourite" />
+                <label htmlFor="favourite" className="isFakeInput">
+                    <span className="isCircle"></span>
+                    <span>Ulubiony</span>
+                </label>
                 <button className='form-button'>Dodaj</button>
             </form>
             <div className="line"></div>
             <div className="favourites-container">
                 <h3>Ulubione</h3>
-                {numbers.filter(numb => numb.favourite).map((n) => 
-                    <div key={n.id} className="favourite">
-                        <div className="fav_image">
-                            { n.avatar ? <img src={n.avatar} alt='Avatar'/> : <Avatar name={n.nickname ?? ''}></Avatar>}
-                        </div>
-                        <div className="fav_info">
-
-                        </div>
-                    </div>
-                )}
+                <Favourites></Favourites>
             </div>
         </div>
     )

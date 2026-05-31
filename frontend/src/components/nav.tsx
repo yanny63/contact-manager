@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useUser } from "../contexts/context";
-import { div } from "framer-motion/client";
+import { formatPhoneNumberIntl } from "react-phone-number-input";
 
 function Nav({ search, setSearch, lightMode, setLightMode }) {
 
     const location = useLocation()
     const [ loaded, setLoaded ] = useState(false)
+    const [ avatarHovered, setAvatarHovered ] = useState(false)
 
     const { user, loadUser, logout } = useUser()
 
@@ -33,15 +34,6 @@ function Nav({ search, setSearch, lightMode, setLightMode }) {
                 </svg>
                 <span style={{ fontStyle: "italic" }}>Linkr</span>
             </div>
-        )
-    }
-
-    function Search() {
-        return (
-            <label className="nav-search" style={ location.pathname === '/' ? { pointerEvents: "all", opacity: "1" } : { pointerEvents: "none", opacity: "0.3" }}>
-                <input className='search-input' placeholder="" onChange={(e) => {setSearch(e.target.value)}}/>
-                <span>Szukaj kontaktu</span>
-            </label>
         )
     }
 
@@ -76,7 +68,11 @@ function Nav({ search, setSearch, lightMode, setLightMode }) {
 
     function Avatar() {
         return (
-            <div style={{ width: '40px', height: '40px', 
+            <div onMouseEnter={() => {
+                setAvatarHovered(true)
+            }} onMouseLeave={() => {
+                setAvatarHovered(false)
+            }} style={{ width: '40px', height: '40px', 
             borderRadius: '50%', background: colors[Math.floor(Math.random() * colors.length)],
             display: 'flex', alignItems: 'center', justifyContent: 'center', 
             fontSize: 40 * 0.35, fontWeight: 500, color: "#fff", cursor: 'pointer'}}>
@@ -96,7 +92,17 @@ function Nav({ search, setSearch, lightMode, setLightMode }) {
                 
                 { user ? 
                     <>
-                       { user.avatar ?  <img src={user.avatar }></img> : <Avatar /> }
+                        <span className="isPhoneNumber">{formatPhoneNumberIntl(`+${user.prefix}${user.phone}`)}</span>
+                       <div className="avatar-container">
+                        { user.avatar ?  <img 
+                        onMouseEnter={() => {setAvatarHovered(true)}} onMouseLeave={() => {setAvatarHovered(false)}} 
+                        src={user.avatar }></img> : <Avatar /> 
+                       }
+                        <div onMouseEnter={() => {setAvatarHovered(true)}} onMouseLeave={() => {setAvatarHovered(false)}}
+                         className={avatarHovered ? "avatar-hovered-container" : "avatar-hovered-container account-options-not-visible"}>
+                            <button onClick={() => {localStorage.removeItem('token'), window.location.reload()}}>Wyloguj</button>
+                        </div>
+                       </div>
                     </>
                 : <>
                     <NavLink to='/auth/login' className="nav-login-isButton">Zaloguj się</NavLink>

@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { Guest, Protected } from './contexts/protected.js'
 import Nav from './components/nav.tsx'
-import Home from './components/home.jsx'
+import Home from './components/home.tsx'
 import Auth from "./components/auth.tsx"
 
 

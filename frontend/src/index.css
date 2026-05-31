@@ -155,6 +155,17 @@ html, body {
   transition: 0.6s;
 }
 
+.isPhoneNumber {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--text);
+  background-color: var(--card);
+  padding: var(--padding-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
 .hasMoreElements {
   display: inline-flex;
   flex-direction: row;
@@ -241,6 +252,35 @@ html, body {
   filter: brightness(120%);
 }
 
+.avatar-container {
+  position: relative;
+}
+
+.avatar-hovered-container {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: transparent;
+  opacity: 1;
+  z-index: 1000;
+  transition: 0.6s;
+}
+.avatar-hovered-container button {
+  width: clamp(60px, 8vh, 120px);
+  padding: var(--padding-sm);
+  background-color: var(--card);
+  color: var(--text);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: 0.4s;
+}
+.account-options-not-visible {
+  pointer-events: none !important;
+  z-index: 0 !important;
+  opacity: 0 !important;
+}
+
 .main-container {
   display: flex;
   flex-direction: row;
@@ -321,6 +361,52 @@ html, body {
   border-color: var(--accent);
 }
 
+.isFakeInput {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  background-color: var(--input);
+  border: 1px solid var(--input-border);
+  width: 100%;
+  padding: var(--padding-md);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: 0.4s;
+}
+
+.isCircle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 14px;
+  width: 14px;
+  border: 1px solid var(--input-border);
+  border-radius: 50%;
+  background-color: transparent;
+  transition: 0.4s;
+}
+.isCircle::after {
+  content: '';
+  height: 6px;
+  width: 6px;
+  background-color: transparent;
+  border-radius: 50%;
+  transition: 0.4s;
+}
+
+#favourite:checked + .isFakeInput {
+  border-color: var(--hover);
+  background-color: rgba(0,188,255, 0.4);
+}
+#favourite:checked + .isFakeInput .isCircle {
+  border-color: var(--hover);
+}
+#favourite:checked + .isFakeInput .isCircle::after {
+  background-color: var(--hover);
+}
+
 .asideWrapper {
   position: relative;
   overflow: visible !important;
@@ -390,6 +476,72 @@ html, body {
   background-color: var(--element-hover);
 }
 
+.numbersList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.isNumbersElement {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  padding: var(--padding-sm);
+  border-radius: var(--radius-md);
+  transition: 0.4s;
+}
+.isNumbersElement span {
+  font-size: 1rem;
+  flex: 1;
+}
+
+.isNumbersElement:hover {
+  background-color: var(--element-hover);
+}
+
+
+.article-isNav {
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+}
+
+.article-nav-buttons-container {
+  display: flex;
+  border-bottom: 0.5px solid gray;
+  width: fit-content;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  cursor: pointer;
+  color: gray;
+  font-size: 14px;
+  position: relative;
+  transition: color 0.25s ease;
+}
+
+.tab::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: white;
+  transition: width 0.25s ease;
+}
+
+.tab[data-active="true"] {
+  color: white;
+}
+
+.tab[data-active="true"]::after {
+  width: 100%;
+}
 
 @media (max-width: 786px) {
   .nav {
