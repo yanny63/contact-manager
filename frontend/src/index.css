@@ -460,7 +460,7 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: var(--padding-md);
+  padding: var(--padding-sm);
   color: var(--text);
 }
 .favourite {
@@ -474,6 +474,29 @@ html, body {
 }
 .favourite:hover {
   background-color: var(--element-hover);
+}
+
+.fav-buttons-container {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  justify-content: center;  
+}
+
+.favButton {
+  background-color: transparent;
+  border: none;
+  font-size: 1.05rem;
+  color: var(--text);
+  opacity: 0.7;
+  cursor: pointer;
+  transition: 0.4s;
+}
+.favButton:hover {
+  opacity: 1;
+}
+.active {
+  opacity: 1;
 }
 
 .numbersList {
@@ -531,16 +554,38 @@ html, body {
   left: 0;
   width: 0%;
   height: 2px;
-  background: white;
+  background: var(--text);
   transition: width 0.25s ease;
 }
 
 .tab[data-active="true"] {
-  color: white;
+  color: var(--text);
 }
 
 .tab[data-active="true"]::after {
   width: 100%;
+}
+
+.chats-container {
+  margin-top: px;
+}
+
+.chat {
+  width: clamp(240px, 40vw, 520px);
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  align-items: center;
+  cursor: pointer;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg);
+  color: var(--text);
+  transition: 0.4s;
+}
+.chat:hover {
+  background-color: var(--element-hover);
 }
 
 @media (max-width: 786px) {

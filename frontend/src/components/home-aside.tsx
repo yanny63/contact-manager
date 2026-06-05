@@ -2,7 +2,7 @@ import { useState, useEffect, forwardRef } from "react"
 import PhoneInput from 'react-phone-number-input'
 import { parsePhoneNumber } from "react-phone-number-input"
 import 'react-phone-number-input/style.css'
-import { newContact, getContacts, unfavourite } from "../ts/api"
+import { newContact, getContacts, favToggle } from "../ts/api"
 
 function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Avatar }) {
 
@@ -16,9 +16,9 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
     }
 
     const [ value, setValue ] = useState('')
-    const [ favourites, setFavourites ] = useState([])
     const [ newContactError, setNewContactError ] = useState(false)
     const [ favError, setFavError ] = useState(false)
+    const [ displayFavourites, setDisplayFavourite ] = useState(true)
 
     useEffect(() => {
         const contactsGetter = async () => {
@@ -74,39 +74,58 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
             setNewContactError(true)
         }
     }
-
-    async function unfav(id: number) {
-        const isOk = await unfavourite(id)
-        if (!isOk) {
-            setFavError(true)
-            return
-        }
-        setFavourites(prev => prev.filter(number => number.id !== id ))
-        setFavError(false)
-    }
     
     async function toggleFav(id: number, type: string) {
         if (type === 'favourites') {
-            await unfav(id)
+            // unfav a contact
+            const isOk = await favToggle(id, false)
+            if (!isOk) {
+                setFavError(true)
+                return
+            }
+            setNumbers(prev => prev.map(item => item.id === id ? { ...item, favourite: !item.favourite } : item))
+            setFavError(false)
+        }
+        else {
+            // add a contact to favs
+            const isOk = await favToggle(id, true) 
+            if (!isOk) {
+                setFavError(true)
+                return
+            }
+            setNumbers(prev => prev.map(item => item.id === id ? { ...item, favourite: !item.favourite } : item))
+            setFavError(false)
         }
     }
 
+    // favourites display
     function Favourites() {
         if (!numbers || numbers[0] === null || numbers.length === 0) {
             return
         }
-        const favs = numbers.filter(n => n.favourite)
+
         return (
             <ul className="numbersList">
-                { favs.map((fav) => (
-                    <li className="isNumbersElement" key={fav.id}>
-                        <div className="fav_image">
-                            { fav.avatar ? <img src={fav.avatar} className="" /> : <Avatar name={fav.nickname ? fav.nickname : fav.phone} />}
-                        </div>
-                        <span className="liListElement">{fav.nickname ? fav.nickname.slice(0, 30) : `+${fav.prefix} ${fav.phone}`}</span>
-                        <Star active={fav.favourite} onClick={() => toggleFav(fav.id, "favourites")}></Star> 
-                    </li>
-                ))}
+                { displayFavourites ? 
+                    numbers.filter(numb => numb.favourite).map((fav) => (
+                        <li className="isNumbersElement" key={fav.id}>
+                            <div className="fav_image">
+                                { fav.avatar ? <img src={fav.avatar} className="" /> : <Avatar name={fav.nickname ? fav.nickname : fav.phone} />}
+                            </div>
+                            <span className="liListElement">{fav.nickname ? fav.nickname.slice(0, 30) : `+${fav.prefix} ${fav.phone}`}</span>
+                            <Star active={fav.favourite} onClick={() => toggleFav(fav.id, "favourites")}></Star> 
+                        </li>
+                    ))
+                    : numbers.map((number) => (
+                        <li className="isNumbersElement" key={number.id}>
+                            <div className="fav_image">
+                                { number.avatar ? <img src={number.avatar} className="" /> : <Avatar name={number.nickname ? number.nickname : number.phone} /> }
+                            </div>
+                            <span className="liListElement">{number.nickname ? number.nickname.slice(0, 30) : `+${number.prefix} ${number.phone}`}</span>
+                            <Star active={number.favourite} onClick={() => toggleFav(number.id, number.favourtie ? "favourites" : "not")}></Star>
+                        </li>
+                    ))
+                }
             </ul>
         )
     }
@@ -132,7 +151,10 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
             </form>
             <div className="line"></div>
             <div className="favourites-container">
-                <h3>Ulubione</h3>
+                <div className="fav-buttons-container">
+                    <button className={ !displayFavourites ? "favButton active" : "favButton"} onClick={() => {setDisplayFavourite(false)}}>Wszystkie</button>
+                    <button className={ displayFavourites ? "favButton active" : "favButton"} onClick={() => {setDisplayFavourite(true)}}>Ulubione</button>
+                </div>
                 <Favourites></Favourites>
             </div>
         </div>

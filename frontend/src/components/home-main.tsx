@@ -36,6 +36,7 @@ function Main({ numbers, setNumbers, Avatar }) {
     }
 
     function DisplayChats() {
+        console.log(numbers)
         return (
             <div className='chats-container'>
                 { numbers === undefined ? 
@@ -46,7 +47,7 @@ function Main({ numbers, setNumbers, Avatar }) {
                         <Avatar name={numb.nickname ? numb.nickname : numb.prefix }/>
                         <div className='central-chat-container'>
                             <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
-                            
+                            <span></span>
                         </div>
                     </div>
                 )) 
@@ -75,12 +76,12 @@ function Main({ numbers, setNumbers, Avatar }) {
                     <Buttons />
                 </div>
                 <DisplayChats />
-                <button onClick={async () => {
+                {/* <button onClick={async () => {
                     const res = await fetch("http://192.168.1.34:8000/API/chats", {
                         headers: {"Authorization": `Bearer ${localStorage.getItem('token')}`}
                     })
                     console.log(await res.json())
-                }}> Pobierz </button>
+                }}> Pobierz </button> */}
             </div>
         </div>
     )

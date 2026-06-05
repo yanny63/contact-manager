@@ -1,6 +1,6 @@
 import { preinit } from "react-dom"
 
-const BASE_URL = 'http://192.168.1.34:8000'
+const BASE_URL = 'http://192.168.1.104:8000'
 
 interface resError {
     detail?: string
@@ -127,7 +127,7 @@ export async function getContacts() {
     }
 }
 
-export async function unfavourite(id: number) {
+export async function favToggle(id: number, toggle: boolean) {
     try {
         const token = localStorage.getItem('token')
         if (!token) {
@@ -136,10 +136,11 @@ export async function unfavourite(id: number) {
         const Form = new URLSearchParams()
 
         Form.append('contact_id', String(id))
+        Form.append('toggle', String(toggle))
 
-        const res = await fetch(`${BASE_URL}/API/unfavourite`, {
+        const res = await fetch(`${BASE_URL}/API/favToggle`, {
             method: "PUT",
-            headers: {'Content-Type': 'application/w-xxx-form-urlencoded',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded',
                 'Authorization': `Bearer ${token}`
             },
             body: Form

@@ -55,7 +55,7 @@ oauth_scheme = OAuth2PasswordBearer(tokenUrl='token', auto_error=False)
 @app.get("/me")
 def me(token: str = Depends(oauth_scheme)):
     if not token:
-        raise HTTPException(status_code=404)
+        raise HTTPException(status_code=401)
     try:
         c = db()
         c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
@@ -128,29 +128,35 @@ def newContact(contact: Contact, status_code=201, token: str = Depends(oauth_sch
         raise HTTPException(status_code=404, detail='Taki numer nie istnieje')
     c.execute(
         "INSERT INTO contacts (owner_id, contact_id, nickname, favourite) VALUES (%s, %s, %s, %s)", 
-        (payload.get('sub'), added.id, contact.nickname, contact.favourite)
+        (payload.get('sub'), added.get("id"), contact.nickname, contact.favourite)
     )
     row = c.execute(
         "SELECT id FROM contacts WHERE owner_id = %s AND contact_id = %s",
-        (payload.get('sub'), added.id)
+        (payload.get('sub'), added.get("id"))
     )
     c.close()
     contact.id = row['id']
     return contact
 
-@app.put('/API/unfavourite')
-def unfavourite(contact_id: str = Form(...), token: str = Depends(oauth_scheme)):
+@app.put('/API/favToggle')
+def unfavourite(contact_id: str = Form(...), toggle: str = Form(...), token: str = Depends(oauth_scheme)):
     if not token or token is None:
         raise HTTPException(status_code=401)
-    if not contact_id:
+    if not contact_id or not toggle:
         raise HTTPException(status_code=400)
     try:
         payload = jwt.decode(token, settings.secret_key, settings.algorithm)
         user_id = payload.get('sub')
+        t = False 
+        match toggle:
+            case "false":
+                pass
+            case "true":
+                t = True
         c = db()
         c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
         c.execute(
-            "UPDATE contacts SET favourite = %s WHERE id = %s AND owner_id = %s", (False, contact_id, user_id)
+            "UPDATE contacts SET favourite = %s WHERE id = %s AND owner_id = %s", (t, contact_id, user_id)
         )
     except Exception as e:
         print(e)
@@ -183,3 +189,37 @@ def contacts(token: str = Depends(oauth_scheme)):
     print(data)
     dataToList = [data]
     return dataToList
+
+@app.get("/API/chats")
+def getChats(token: str = Depends(oauth_scheme)):
+    if not token or token == '':
+        raise HTTPException(status_code=401, detail="Uzytkownik niezalogowany")
+    
+    c = db()
+    payload = jwt.decode(token, settings.secret_key, settings.algorithm)
+    if not payload:
+        raise HTTPException(status_code=401)
+    user_id = payload.get('sub')
+
+    try:
+        c.connection(settings.host, settings.database, settings.database_user, settings.database_password)
+        chats = c.execute(
+            """SELECT u.phone, u.picture, last_msg.body, last_msg.created_at
+            FROM conversation_participants AS me
+            JOIN conversation_participants AS other
+                ON other.conversation_id = me.conversation_id AND other.user_id != %s
+            JOIN users AS u ON u.id = other.user_id
+            LEFT JOIN (
+                SELECT DISTINCT ON (conversation_id)
+                    conversation_id, body, created_at
+                FROM messages ORDER BY conversation_id, created_at DESC)
+            AS last_msg ON last_msg.conversation_id = me.conversation_id WHERE me.user_id = %s""",
+            (user_id, user_id)
+        )
+        print(chats)
+        return chats
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500)
+    finally:
+        c.close()
