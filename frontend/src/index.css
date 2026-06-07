@@ -567,14 +567,16 @@ html, body {
 }
 
 .chats-container {
-  margin-top: px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .chat {
   width: clamp(240px, 40vw, 520px);
   display: flex;
   flex-direction: row;
-  gap: 4px;
+  gap: 8px;
   align-items: center;
   cursor: pointer;
   padding: 10px;
@@ -586,6 +588,10 @@ html, body {
 }
 .chat:hover {
   background-color: var(--element-hover);
+}
+.skeleton-name-msg {
+  display: flex;
+  flex-direction: column;
 }
 
 @media (max-width: 786px) {

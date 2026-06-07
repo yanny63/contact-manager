@@ -1,10 +1,19 @@
 import { preinit } from "react-dom"
 
-const BASE_URL = 'http://192.168.1.104:8000'
+const BASE_URL = 'http://192.168.1.101:8000'
 
 interface resError {
     detail?: string
     status: number
+}
+
+interface ChatsInt {
+    phone: string
+    prefix: string
+    nickname?: string
+    picture?: string
+    body?: string
+    created_at?: string
 }
 
 export async function login(phone: string, prefix: string, password: string) {
@@ -97,12 +106,13 @@ export async function newContact(contact: object) {
             }
             throw new Error(data.detail || `Błąd serwera ${data.status}`)
         }
-        return true
+        const data = await res.json()
+        console.log(`data: ${data}`)
+        return data
     }
     catch (err) {
         alert(err)
         console.log(err)
-        return false
     }
 }
 
@@ -206,5 +216,26 @@ export async function register(phone: string, prefix: string, password: string) 
     catch (err) {
         console.log(err)
         return false
+    }
+}
+
+export async function getChats() {
+    try {
+        const token = getToken()
+        if (!token) {
+            throw new Error('Uzytkownik niezalogowany')
+        }
+        const res = await fetch(`${BASE_URL}/API/chats`, {
+            headers: {"Authorization": `Bearer ${token}`}
+        })
+        if (!res.ok) {
+            const data : resError = await res.json()
+            throw new Error(data.detail || `Błąd serwera ${data.status}`)
+        }
+        const data : ChatsInt = await res.json()
+        return data
+    }
+    catch (err) {
+        console.log(err)
     }
 }

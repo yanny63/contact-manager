@@ -1,11 +1,23 @@
 import { useState, useEffect } from 'react';
-import { getContacts } from '../ts/api';
+import { getContacts, getChats, getMe } from '../ts/api';
 import { formatPhoneNumberIntl } from 'react-phone-number-input';
 import { span } from 'framer-motion/client';
+import Skeleton from '../skeletons/skeleton';
 
 function Main({ numbers, setNumbers, Avatar }) { 
 
     const [ currentlyDisplayed, setCurrentlyDisplayed ] = useState('all')
+    const [ chats, setChats ] = useState([])
+    const [ chatsLoaded, setChatsLoaded ] = useState(false)
+
+    useEffect(() => {
+        async function chatGetter() {
+            const data = await getChats() 
+            setChats([...chats, data])
+        }
+        chatGetter()  
+        setChatsLoaded(true)
+    }, [])
 
     function Buttons() {
         return (
@@ -35,11 +47,31 @@ function Main({ numbers, setNumbers, Avatar }) {
         return formatPhoneNumberIntl(number)
     }
 
+    function ChatSkeleton() {
+        return (
+            <div className='chats-container'>
+                {Array(3).fill(0).map((_, i) => (
+                    <div className='chat'>
+                        <Skeleton width='40px' height='40px' circle={true}/>
+                        <div className='skeleton-name-msg'>
+                            <Skeleton width='120px' height='20px' />
+                            <Skeleton width='80px' height='20px' />
+                        </div> 
+                    </div>
+                ))}
+            </div>
+        )
+    }
+    
+
+
     function DisplayChats() {
         console.log(numbers)
         return (
             <div className='chats-container'>
-                { numbers === undefined ? 
+                { !chatsLoaded ? 
+                <ChatSkeleton />
+                : chats === undefined || chats.length === 0 ? 
                 <div>Nie ma </div> : // DOKONCZYC DIVA GDY NIE MA NUMEROW
                 
                 currentlyDisplayed === 'all' ? numbers.map((numb) => (
@@ -75,13 +107,14 @@ function Main({ numbers, setNumbers, Avatar }) {
                 <div className='article-nav-buttons-container'>
                     <Buttons />
                 </div>
-                <DisplayChats />
-                {/* <button onClick={async () => {
-                    const res = await fetch("http://192.168.1.34:8000/API/chats", {
-                        headers: {"Authorization": `Bearer ${localStorage.getItem('token')}`}
-                    })
-                    console.log(await res.json())
-                }}> Pobierz </button> */}
+                <DisplayChats />    
+                <button onClick={async () => {
+                    // const res = await fetch("http://192.168.1.101:8000/API/chats", {
+                    //     headers: {"Authorization": `Bearer ${localStorage.getItem('token')}`}
+                    // })
+                    // console.log(await res.json())
+                    console.log(chats)
+                }}> Pobierz </button>
             </div>
         </div>
     )

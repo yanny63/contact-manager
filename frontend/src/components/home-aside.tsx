@@ -48,8 +48,16 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
     }
 
     interface resError {
-        error: string,
+        error: string
         status: number
+    }
+
+    interface ReturningContact {
+        phone: string
+        prefix: string
+        nickname: string
+        id: number
+        favourite?: boolean
     }
 
     async function addContact(e: React.FormEvent<HTMLFormElement>) {
@@ -63,16 +71,13 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
         contact['phone'] = parsed.nationalNumber
         contact['prefix'] = parsed.countryCallingCode
         contact['favourite'] = data.get('favourite') === 'on'
+        const backendId : ReturningContact = await newContact(contact)
+        contact['id'] = backendId?.id
         console.log(contact)
-        if (await newContact(contact)) {
-            setNumbers([...numbers, contact])
-            setNewContactError(false)
-            form.reset()
-            setValue('')
-        }
-        else {
-            setNewContactError(true)
-        }
+        setNumbers([...numbers, contact])
+        setNewContactError(false)
+        form.reset()
+        setValue('')
     }
     
     async function toggleFav(id: number, type: string) {
@@ -85,6 +90,8 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
             }
             setNumbers(prev => prev.map(item => item.id === id ? { ...item, favourite: !item.favourite } : item))
             setFavError(false)
+            console.log("XD")
+            console.log(numbers)
         }
         else {
             // add a contact to favs
@@ -95,6 +102,8 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
             }
             setNumbers(prev => prev.map(item => item.id === id ? { ...item, favourite: !item.favourite } : item))
             setFavError(false)
+            console.log('xd')
+            console.log(numbers)
         }
     }
 
@@ -122,7 +131,7 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
                                 { number.avatar ? <img src={number.avatar} className="" /> : <Avatar name={number.nickname ? number.nickname : number.phone} /> }
                             </div>
                             <span className="liListElement">{number.nickname ? number.nickname.slice(0, 30) : `+${number.prefix} ${number.phone}`}</span>
-                            <Star active={number.favourite} onClick={() => toggleFav(number.id, number.favourtie ? "favourites" : "not")}></Star>
+                            <Star active={number.favourite} onClick={() => toggleFav(number.id, number.favourite ? "favourites" : "not")}></Star>
                         </li>
                     ))
                 }
