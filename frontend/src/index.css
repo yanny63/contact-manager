@@ -4,6 +4,7 @@
     --accent: #00a6f4;
     --hover: #00bcff;
     --text: #f8fafc;
+    --text-secondary: #dcdfe5;
     --text-button: #f8fafc;
     --border: rgba(255, 255, 255, 0.08);
     --element-hover: rgba(255, 255, 255, 0.05);
@@ -68,6 +69,7 @@
   width: 0% !important;
   overflow: hidden;
 }
+
 
 * {
   margin: 0;
@@ -196,16 +198,18 @@ html, body {
   filter: brightness(120%);
 }
 
-.nav-search {
-  position: relative;
+.search-input-container {
+  width: clamp(180px, 20vw, 200px);
+  padding: var(--padding-md);
 }
-.nav-search span {
+.search-input-placeholder {
   position: absolute;
   top: 50%;
   left: 6px;
   transform: translateY(-50%);
   color: var(--text);
   font-size: 0.95rem;
+  pointer-events: none;
   transition: 0.4s;
 }
 .search-input {
@@ -221,11 +225,15 @@ html, body {
 .search-input:focus {
   border-color: var(--accent);
 }
-.nav-search:focus-within span  {
+.search-input-placeholder:focus-within  {
   top: 0;
   font-size: 0.6rem;
 }
-.search-input:not(:placeholder-shown) + span {
+.search-input:focus + .search-input-placeholder {
+  top: 0;
+  font-size: 0.6rem;
+}
+.search-input:not(:placeholder-shown) + .search-input-placeholder {
   top: 0;
   font-size: 0.6rem;
 }
@@ -328,7 +336,7 @@ html, body {
   cursor: pointer;
   padding: var(--padding-md);
   font-weight: bold;
-  color: var(--text-button);
+  color: var(--text);
   transition: 0.4s;
 }
 .form-button:hover {
@@ -588,6 +596,16 @@ html, body {
 }
 .chat:hover {
   background-color: var(--element-hover);
+}
+.central-chat-container {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+}
+.last-message {
+  font-size: 0.9rem;
+  color: var(--text);
+  font-weight: 200;
 }
 .skeleton-name-msg {
   display: flex;

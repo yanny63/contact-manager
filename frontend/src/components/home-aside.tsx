@@ -61,23 +61,32 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
     }
 
     async function addContact(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault()
+        try {
+            e.preventDefault()
 
-        const form = e.currentTarget
+            const form = e.currentTarget
 
-        const data = new FormData(e.currentTarget)
-        const contact = Object.fromEntries(data) as any
-        const parsed = parsePhoneNumber(value)
-        contact['phone'] = parsed.nationalNumber
-        contact['prefix'] = parsed.countryCallingCode
-        contact['favourite'] = data.get('favourite') === 'on'
-        const backendId : ReturningContact = await newContact(contact)
-        contact['id'] = backendId?.id
-        console.log(contact)
-        setNumbers([...numbers, contact])
-        setNewContactError(false)
-        form.reset()
-        setValue('')
+            const data = new FormData(e.currentTarget)
+            const contact = Object.fromEntries(data) as any
+            const parsed = parsePhoneNumber(value)
+            contact['phone'] = parsed.nationalNumber
+            contact['prefix'] = parsed.countryCallingCode
+            contact['favourite'] = data.get('favourite') === 'on'
+            const backendId : ReturningContact = await newContact(contact)
+            if (!backendId) {
+                setNewContactError(true)
+                return
+            }
+            contact['id'] = backendId?.id
+            console.log(contact)
+            setNumbers([...numbers, contact])
+            setNewContactError(false)
+            form.reset()
+            setValue('')
+        }
+        catch {
+            setNewContactError(true)
+        }
     }
     
     async function toggleFav(id: number, type: string) {
@@ -145,6 +154,7 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
             <form className='add-contact-form' onSubmit={addContact}>
                 <h3>Nowy Kontakt</h3>
                 <PhoneInput 
+                    numberInputProps={{className: newContactError ? 'contactError' : ''}}
                     international
                     defaultCountry='PL'
                     value={value}
