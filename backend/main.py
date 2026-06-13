@@ -244,7 +244,7 @@ def getChats(token: str = Depends(oauth_scheme)):
     try:
         conn, cur = db_connection()
         cur.execute(
-            """SELECT u.phone, c.picture, c.nickname, u.prefix, last_msg.body, last_msg.created_at
+            """SELECT u.phone, c.picture, c.nickname, c.favourite, u.prefix, other.conversation_id, last_msg.body, last_msg.created_at
             FROM conversation_participants AS me
             JOIN conversation_participants AS other
                 ON other.conversation_id = me.conversation_id AND other.user_id != %s
@@ -263,5 +263,28 @@ def getChats(token: str = Depends(oauth_scheme)):
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=e)
+    finally:
+        conn.close()
+
+@app.get('/API/chat')
+def chat(token: str = Depends(oauth_scheme), chat_id: str = Form(...)):
+    if not token or token == '':
+        raise HTTPException(status_code=401, detail="Uzytkownik niezalogowany")
+    try:
+        conn, cur = db_connection()
+        cur.execute(
+            """SELECT m.sender_id, m.body, m.created_at, m.read_at, m_a.type, m_a.url
+            FROM messages AS m
+            LEFT JOIN message_attachments AS m_a ON m.id = m_a.message_id
+            WHERE m.conversation_id = %s
+            ORDER BY m.created_at DESC LIMIT 20""",
+            (int(chat_id),)
+        )
+        c = cur.fetchall()
+        print(c)
+        return {"chat": c}
+    except Exception as e:
+        print(e)
+        return {"error": e}
     finally:
         conn.close()
