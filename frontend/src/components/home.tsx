@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Aside from './home-aside';
 import Main from './home-main'
 import { checkToken } from '../ts/api';
@@ -62,6 +62,8 @@ function Home({ search, setSearch }) {
   const [ asideClosed, setAsideClosed ] = useState(false)
   const [ numbers, setNumbers ] = useState<NumberType[]>([])
 
+  const inputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     setLoaded(true)
   }, [])
@@ -78,12 +80,13 @@ function Home({ search, setSearch }) {
             numbers={numbers} 
             setNumbers={setNumbers} 
             Avatar={Avatar}
+            inputRef={inputRef}
           />
         </aside>
         <AsideCloser asideClosed={asideClosed} setAsideClosed={setAsideClosed} />
       </div>
       <article className='articleWrapper'>
-        <Main numbers={numbers} setNumbers={setNumbers} Avatar={Avatar} />
+        <Main numbers={numbers} setNumbers={setNumbers} Avatar={Avatar} inputRef={inputRef}/>
       </article>
     </div>
   )
