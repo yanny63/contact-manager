@@ -42,7 +42,7 @@ function Login({ lightMode }) {
             password: form.password as string
         }
         const user = await login(credentials.phone, credentials.prefix, credentials.password)
-        console.log(user)
+        
         if (!user) {
             setLoginError(true)
             return

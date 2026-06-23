@@ -56,7 +56,7 @@ function AsideCloser({ asideClosed, setAsideClosed }) {
   )
 }
 
-function Home({ search, setSearch }) {
+function Home({ search, setSearch, lightMode }) {
   const [ error, setError ] = useState('')
   const [ loaded, setLoaded ] = useState(false)
   const [ asideClosed, setAsideClosed ] = useState(false)
@@ -86,7 +86,7 @@ function Home({ search, setSearch }) {
         <AsideCloser asideClosed={asideClosed} setAsideClosed={setAsideClosed} />
       </div>
       <article className='articleWrapper'>
-        <Main numbers={numbers} setNumbers={setNumbers} Avatar={Avatar} inputRef={inputRef}/>
+        <Main numbers={numbers} setNumbers={setNumbers} Avatar={Avatar} inputRef={inputRef} setAsideClosed={setAsideClosed} lightMode={lightMode} />
       </article>
     </div>
   )

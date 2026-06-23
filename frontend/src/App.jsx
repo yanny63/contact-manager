@@ -22,7 +22,7 @@ function App() {
     <div className='app-main'>
       <Nav lightMode={lightMode} setLightMode={setLightMode} ></Nav>
       <Routes>
-        <Route path='/' element={ <Home search={search} setSearch={setSearch} /> } /> 
+        <Route path='/' element={ <Home search={search} setSearch={setSearch} lightMode={lightMode} /> } /> 
         <Route path='/auth/:type' element={ 
           <Guest>
             <Auth lightMode={lightMode} />

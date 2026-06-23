@@ -1,6 +1,6 @@
 import { preinit } from "react-dom"
 
-const BASE_URL = 'http://192.168.1.101:8000'
+const BASE_URL = 'http://192.168.1.34:8000'
 
 interface resError {
     detail?: string
@@ -14,6 +14,8 @@ interface ChatsInt {
     picture?: string
     body?: string
     created_at?: string
+    favourite: boolean
+    conversation_id: number
 }
 
 export async function login(phone: string, prefix: string, password: string) {
@@ -232,10 +234,26 @@ export async function getChats() {
             const data : resError = await res.json()
             throw new Error(data.detail || `Błąd serwera ${data.status}`)
         }
-        const data : ChatsInt = await res.json()
+        const data : ChatsInt[] = await res.json()
         return data
     }
     catch (err) {
         console.log(err)
     }
+}
+
+export async function getChat(id: string) {
+    const token = localStorage.getItem('token')
+    if (!token || token === '') {
+        throw new Error('Uzytkownik niezalogowany')
+    }
+    const res = await fetch("/API/chat", {
+        headers: {"Authorization": `Bearer ${token}`},
+        body: id
+    })
+    if (!res.ok) {
+        const data : resError = await res.json()
+        throw new Error(data.detail || `Błąd serwera: ${data.status}`)
+    }
+    return res.json()
 }

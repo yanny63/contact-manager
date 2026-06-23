@@ -4,7 +4,7 @@ import { parsePhoneNumber } from "react-phone-number-input"
 import 'react-phone-number-input/style.css'
 import { newContact, getContacts, favToggle } from "../ts/api"
 
-function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Avatar }) {
+function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Avatar, inputRef }) {
 
     interface NumberType {
         id: number
@@ -159,6 +159,7 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
                     defaultCountry='PL'
                     value={value}
                     onChange={setValue}
+                    ref={inputRef}
                 />
                 <input className='form-input' name='nickname' placeholder='Pseudonim (opcjonalne)' type='text'/>
                 <input type="checkbox" name="favourite" hidden id="favourite" />
