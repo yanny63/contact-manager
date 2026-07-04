@@ -3,6 +3,68 @@ import PhoneInput from 'react-phone-number-input'
 import { parsePhoneNumber } from "react-phone-number-input"
 import 'react-phone-number-input/style.css'
 import { newContact, getContacts, favToggle } from "../ts/api"
+import * as Dialog from "@radix-ui/react-dialog"
+import { Link } from "react-router-dom"
+import { useUser } from "../contexts/context"
+
+function NotLoggedInOverlay({ popupVisible, setPopupVisible, phone, setPhone }) {
+
+    const [ loginFormPassword, setLoginFormPassword ] = useState('')
+    const [ loginError, setLoginError ] = useState(false)
+
+    const { login } = useUser()
+    
+    async function handleSubmit() {
+        if (!phone || !loginFormPassword) {
+            setLoginError(true)
+            return
+        }
+
+        const parsed = parsePhoneNumber(phone)
+
+        const data = await login(parsed.nationalNumber, parsed.countryCallingCode, loginFormPassword)
+        if (data) {
+            setPopupVisible(false)
+        }
+        setLoginError(false)
+    }
+
+    function handleClose() {
+        setPopupVisible(false)
+        setLoginError(false)
+    }
+
+    return (
+        <Dialog.Root open={popupVisible}>
+            <Dialog.Portal>
+                <Dialog.Overlay className="not-logged-overlay" onClick={handleClose} />
+                <Dialog.Content className="not-logged-content">
+                    <Dialog.Title>Zaloguj się</Dialog.Title>
+                    <div className="not-logged-inner">
+                        <PhoneInput 
+                        international
+                        defaultCountry="PL"
+                        value={phone}
+                        onChange={setPhone}/>
+                    </div>
+                    
+                    <div className="not-logged-inner">
+                        <label htmlFor="password">Hasło</label>
+                        <input value={loginFormPassword} onChange={(e) => {setLoginFormPassword(e.target.value)}} className="form-input" id="password" type="password" placeholder="••••••••••••"/>
+                    </div>
+
+                    <button className="form-button" onClick={() => {handleSubmit()}}>Zaloguj się</button>
+                    { loginError && <p className="not-logged-error">Nieprawidłowy numer lub hasło</p> }
+                    <p className="not-logged-bottom">Lub <Link to={'/auth/register'}>zarejestruj się</Link></p>
+
+                    <Dialog.Close className="not-logged-overlay-closer" asChild onClick={handleClose}>
+                        <button>X</button>
+                    </Dialog.Close>
+                </Dialog.Content>
+            </Dialog.Portal>
+        </Dialog.Root>
+    )
+}
 
 function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Avatar, inputRef }) {
 
@@ -15,10 +77,14 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
         favourite: boolean
     }
 
+    const [ phone, setPhone ] = useState('')
+    const [ popupVisible, setPopupVisible ] = useState(false)
     const [ value, setValue ] = useState('')
     const [ newContactError, setNewContactError ] = useState(false)
     const [ favError, setFavError ] = useState(false)
     const [ displayFavourites, setDisplayFavourite ] = useState(true)
+
+    const { user } = useUser()
 
     useEffect(() => {
         const contactsGetter = async () => {
@@ -26,7 +92,7 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
             setNumbers(numbersFromBackend)
         }
         contactsGetter()
-    }, [setNumbers])
+    }, [user])
 
     function hideError(e) {
         e.target.remove()
@@ -63,6 +129,11 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
     async function addContact(e: React.FormEvent<HTMLFormElement>) {
         try {
             e.preventDefault()
+            if (!localStorage.getItem('token') || localStorage.getItem('token') == '') {
+                setPopupVisible(true)
+                console.log(popupVisible)
+                return
+            }
 
             const form = e.currentTarget
 
@@ -177,6 +248,7 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
                 </div>
                 <Favourites></Favourites>
             </div>
+            <NotLoggedInOverlay popupVisible={popupVisible} setPopupVisible={setPopupVisible} phone={phone} setPhone={setPhone} /> 
         </div>
     )
 }

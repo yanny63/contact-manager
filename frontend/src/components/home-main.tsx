@@ -4,6 +4,7 @@ import { formatPhoneNumber, formatPhoneNumberIntl } from 'react-phone-number-inp
 import { span } from 'framer-motion/client';
 import Skeleton from '../skeletons/skeleton';
 import EmojiPicker, { EmojiStyle, Theme, EmojiClickData } from 'emoji-picker-react';
+import { useUser } from '../contexts/context';
 
 function SearchInput({ setSearch }) {
     return (
@@ -29,13 +30,9 @@ function Attachments() {
     )
 }
 
-function MessageInput({ message, setMessage }) {
+function MessageInput({ message, setMessage, trackCursor }) {
     return (
-        <input id='message' value={message} type='text' placeholder='Zacznij pisać...' onKeyDown={(a) => {
-            if (a.currentTarget.value === 'Enter') {
-                console.log('dziala cwelu')
-            }
-        }} onChange={(e) => {setMessage(e.target.value)}} />
+        <input id='message' value={message} type='text' placeholder='Zacznij pisać...' onKeyUp={trackCursor} onClick={trackCursor} onChange={(e) => {setMessage(e.target.value)}} />
     )
 }
 
@@ -136,7 +133,7 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
             <div className='chat-content'></div>
             <div className='chat-input'>
                 <Attachments />
-                <MessageInput message={message} setMessage={setMessage} />
+                <MessageInput message={message} setMessage={setMessage} trackCursor={trackCursor} />
                 <Emojis lightMode={lightMode} emojisFocused={emojisFocused} setEmojisFocused={setEmojisFocused} pickerRef={pickerRef} handleClick={handleEmojiClick} />
                 <SendButton message={message} />
             </div>
@@ -145,6 +142,16 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
 }
 
 function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode }) { 
+
+    const socketRef = useRef(null)
+
+    useEffect(() => {
+        socketRef.current = new WebSocket(
+            "ws://localhost:8000/ws"
+        )
+
+        return () => socketRef.current?.close()
+    }, [])
 
     interface ChatsInt {
         phone: string
@@ -167,6 +174,8 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
     const [ chatOpen, setChatOpen ] = useState<boolean>(false)
     const [ emojisFocused, setEmojisFocused ] = useState<boolean>(false)
 
+    const { user } = useUser()
+
     useEffect(() => {
         async function chatGetter() {
             try {
@@ -180,7 +189,7 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
             }
         }
         chatGetter()  
-    }, [])
+    }, [user])
 
     function Buttons() {
         return (
