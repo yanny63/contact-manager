@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { getContacts, getChats, getMe, getChat } from '../ts/api';
 import { formatPhoneNumber, formatPhoneNumberIntl } from 'react-phone-number-input';
 import { span } from 'framer-motion/client';
@@ -30,15 +30,22 @@ function Attachments() {
     )
 }
 
-function MessageInput({ message, setMessage, trackCursor }) {
+function MessageInput({ message, setMessage, trackCursor, buttonRef }) {
+
+    function handleEnter(e: KeyboardEvent<HTMLInputElement>) {
+        if (e.key === "Enter" && !e.shiftKey && buttonRef.current) {
+            buttonRef.current.click()
+        }
+    }
+
     return (
-        <input id='message' value={message} type='text' placeholder='Zacznij pisać...' onKeyUp={trackCursor} onClick={trackCursor} onChange={(e) => {setMessage(e.target.value)}} />
+        <input id='message' value={message} type='text' placeholder='Zacznij pisać...' onKeyUp={trackCursor} onClick={trackCursor} onChange={(e) => {setMessage(e.target.value)}} onKeyDown={handleEnter} />
     )
 }
 
-function SendButton({ message }: { message: string }) {
+function SendButton( { message, buttonRef }) {
     return (
-        <button className='send-button' disabled={!message.length}>
+        <button ref={buttonRef} className='send-button' disabled={!message.length}>
             <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-send">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                 <path d="M10 14l11 -11" />
@@ -73,6 +80,7 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
     const pickerRef = useRef<HTMLDivElement>(null)
     const cursorPosRef = useRef<number | null>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+    const buttonRef = useRef<HTMLButtonElement>(null)
 
     function trackCursor() {
         if (inputRef.current) {
@@ -109,9 +117,7 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
             document.addEventListener('mousedown', handleClick)
         }
 
-        return () => {
-            document.removeEventListener('mousedown', handleClick)
-        }
+        return () => document.removeEventListener('mousedown', handleClick)
     }, [emojisFocused])
     return (
         <div className='chat-open'>
@@ -133,25 +139,15 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
             <div className='chat-content'></div>
             <div className='chat-input'>
                 <Attachments />
-                <MessageInput message={message} setMessage={setMessage} trackCursor={trackCursor} />
+                <MessageInput buttonRef={buttonRef} message={message} setMessage={setMessage} trackCursor={trackCursor} />
                 <Emojis lightMode={lightMode} emojisFocused={emojisFocused} setEmojisFocused={setEmojisFocused} pickerRef={pickerRef} handleClick={handleEmojiClick} />
-                <SendButton message={message} />
+                <SendButton buttonRef={buttonRef} message={message} />
             </div>
         </div>
     )
 }
 
 function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode }) { 
-
-    const socketRef = useRef(null)
-
-    useEffect(() => {
-        socketRef.current = new WebSocket(
-            "ws://localhost:8000/ws"
-        )
-
-        return () => socketRef.current?.close()
-    }, [])
 
     interface ChatsInt {
         phone: string
@@ -174,7 +170,13 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
     const [ chatOpen, setChatOpen ] = useState<boolean>(false)
     const [ emojisFocused, setEmojisFocused ] = useState<boolean>(false)
 
-    const { user } = useUser()
+    interface User {
+        id: number
+        phone: string
+        picture?: string
+        prefix: string
+    }
+    const { user } : {user: User}= useUser()
 
     useEffect(() => {
         async function chatGetter() {
@@ -189,6 +191,7 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
             }
         }
         chatGetter()  
+        setCurrentlyOpen(null)
     }, [user])
 
     function Buttons() {
@@ -370,8 +373,8 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
             <ChatCloser />
             <div className={chatOpen ? 'chat-container' : 'chat-container chat-not-visible'}>
                 {currentlyOpen ? (
-                    <Chat id={currentlyOpen} info={currentInfo} Avatar={Avatar} message={message} 
-                    setMessage={setMessage} lightMode={lightMode} emojisFocused={emojisFocused} setEmojisFocused={setEmojisFocused} />
+                    user?.id && <Chat id={currentlyOpen} info={currentInfo} Avatar={Avatar} message={message} 
+                    setMessage={setMessage} lightMode={lightMode} emojisFocused={emojisFocused} setEmojisFocused={setEmojisFocused} /> 
                 ) : (
                     <ChatPlaceholder />
                 )}

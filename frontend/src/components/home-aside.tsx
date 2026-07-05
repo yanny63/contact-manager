@@ -1,4 +1,4 @@
-import { useState, useEffect, forwardRef } from "react"
+import React, { useState, useEffect, useRef, KeyboardEvent } from "react"
 import PhoneInput from 'react-phone-number-input'
 import { parsePhoneNumber } from "react-phone-number-input"
 import 'react-phone-number-input/style.css'
@@ -11,6 +11,7 @@ function NotLoggedInOverlay({ popupVisible, setPopupVisible, phone, setPhone }) 
 
     const [ loginFormPassword, setLoginFormPassword ] = useState('')
     const [ loginError, setLoginError ] = useState(false)
+    const  buttonRef = useRef<HTMLButtonElement>(null)
 
     const { login } = useUser()
     
@@ -34,6 +35,12 @@ function NotLoggedInOverlay({ popupVisible, setPopupVisible, phone, setPhone }) 
         setLoginError(false)
     }
 
+    function handleEnter(e: KeyboardEvent<HTMLInputElement>) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            buttonRef.current.click()
+        }
+    }
+
     return (
         <Dialog.Root open={popupVisible}>
             <Dialog.Portal>
@@ -50,12 +57,18 @@ function NotLoggedInOverlay({ popupVisible, setPopupVisible, phone, setPhone }) 
                     
                     <div className="not-logged-inner">
                         <label htmlFor="password">Hasło</label>
-                        <input value={loginFormPassword} onChange={(e) => {setLoginFormPassword(e.target.value)}} className="form-input" id="password" type="password" placeholder="••••••••••••"/>
+                        <input value={loginFormPassword} 
+                        onChange={(e) => {setLoginFormPassword(e.target.value)}}
+                        onKeyDown={handleEnter}
+                        className="form-input" id="password" type="password" placeholder="••••••••••••"/>
                     </div>
 
-                    <button className="form-button" onClick={() => {handleSubmit()}}>Zaloguj się</button>
+                    <button  ref={buttonRef} className="form-button" onClick={() => {handleSubmit()}}>Zaloguj się</button>
                     { loginError && <p className="not-logged-error">Nieprawidłowy numer lub hasło</p> }
-                    <p className="not-logged-bottom">Lub <Link to={'/auth/register'}>zarejestruj się</Link></p>
+                    <div className="not-logged-bottom">
+                        <Link to={"/forgotpassword"}>Zapomniałeś hasła?</Link>
+                        <Link to={'/auth/register'}>Zarejestruj się</Link>
+                    </div>
 
                     <Dialog.Close className="not-logged-overlay-closer" asChild onClick={handleClose}>
                         <button>X</button>
@@ -131,7 +144,6 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
             e.preventDefault()
             if (!localStorage.getItem('token') || localStorage.getItem('token') == '') {
                 setPopupVisible(true)
-                console.log(popupVisible)
                 return
             }
 
@@ -239,6 +251,7 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
                     <span>Ulubiony</span>
                 </label>
                 <button className='form-button'>Dodaj</button>
+                { newContactError && <p className="contact-error">Nieprawidłowy numer telefonu</p>}
             </form>
             <div className="line"></div>
             <div className="favourites-container">

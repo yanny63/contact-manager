@@ -139,6 +139,7 @@ html, body {
 }
 
 .nav {
+  z-index: 1001;
   grid-area: nav;
   display: flex;
   align-items: center;
@@ -267,10 +268,9 @@ html, body {
 .avatar-hovered-container {
   position: absolute;
   top: 100%;
-  left: 0;
+  right: 0;
   background-color: transparent;
   opacity: 1;
-  z-index: 1000;
   transition: 0.6s;
 }
 .avatar-hovered-container button {
@@ -288,7 +288,6 @@ html, body {
   z-index: 0 !important;
   opacity: 0 !important;
 }
-
 .main-container {
   display: flex;
   flex-direction: row;
@@ -296,6 +295,7 @@ html, body {
   height: 100%;
   border-radius: var(--radius-sm);
   grid-area: main;
+  z-index: 1000;
 }
 
 .add-contact-form {
@@ -437,6 +437,7 @@ html, body {
   top: 50%;
   transform: translateY(-50%);
   left: 100%;
+  z-index: 1001;
   cursor: pointer;
   transition: 1s;
 }
@@ -771,24 +772,34 @@ html, body {
 .chat-closer {
   display: none;
   background-color: var(--bg);
-  z-index: 1002;
+  z-index: 1001;
   border: none;
   outline: none;
   cursor: pointer;
   position: absolute;
   top: 50%;
+  right: 0;
   transform: translateY(-50%);
   transition: 1s;
 }
 .chat-closer svg {
   color: var(--text);
-  animation: svg-open 1s;
+  animation: svg-open2 1s;
+  transform: rotate(180deg);
   transition: 1s;
 }
-
 .chat-closer.closed svg {
-  animation: svg-closed 1s;
-  transform: rotate(180deg);
+  animation: svg-closed2 1s;
+  transform: rotate(0);
+}
+
+@keyframes svg-open2 {
+  from {transform: rotate(0)}
+  to {transform: rotate(180deg)}
+}
+@keyframes svg-closed2 {
+  from {transform: rotate(180deg)}
+  to {transform: rotate(0)}
 }
 
 .attachment-container {
@@ -897,9 +908,11 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
+} 
 .not-logged-bottom {
-  text-align: center;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }
 .not-logged-bottom a {
   text-decoration: none;
@@ -934,6 +947,10 @@ html, body {
   }
   .aside-close-button {
     display: block;
+  }
+
+  .article-isNav:has(~ .chat-not-visible.chat-container) {
+    width: 100%;
   }
 
   .chat-container {

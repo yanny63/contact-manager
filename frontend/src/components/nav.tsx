@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useUser } from "../contexts/context";
 import { formatPhoneNumberIntl } from "react-phone-number-input";
+import { IconLogout } from '@tabler/icons-react';
 
 function Nav({ search, setSearch, lightMode, setLightMode }) {
 
     const location = useLocation()
     const [ loaded, setLoaded ] = useState(false)
     const [ avatarHovered, setAvatarHovered ] = useState(false)
+    const [ color, setColor ] = useState<string | null>(null)
 
     const { user, loadUser, logout } = useUser()
 
@@ -15,6 +17,12 @@ function Nav({ search, setSearch, lightMode, setLightMode }) {
         setLoaded(true)
         loadUser()
     }, [])
+
+    useEffect(() => {
+        if (user) {
+            setColor(colors[Math.floor(Math.random() * colors.length)])
+        }
+    }, [user])
 
         function Phone() {
         return (
@@ -66,18 +74,29 @@ function Nav({ search, setSearch, lightMode, setLightMode }) {
         "#9B59B6", "#1A7FC1", "#27AE60", "#C0392B",
     ]
 
-    function Avatar() {
+    function Avatar({ color }) {
         return (
             <div onMouseEnter={() => {
                 setAvatarHovered(true)
             }} onMouseLeave={() => {
                 setAvatarHovered(false)
             }} style={{ width: '40px', height: '40px', 
-            borderRadius: '50%', background: colors[Math.floor(Math.random() * colors.length)],
+            borderRadius: '50%', background: color,
             display: 'flex', alignItems: 'center', justifyContent: 'center', 
             fontSize: 40 * 0.35, fontWeight: 500, color: "#fff", cursor: 'pointer'}}>
                 { '+' + user.prefix }
             </div>
+        )
+    }
+
+    function UserSettings() {
+        return (
+            <>
+                <button onClick={logout}>
+                    <IconLogout stroke={2} />
+                    <span>Wyloguj</span>
+                </button>
+            </>
         )
     }
 
@@ -96,11 +115,11 @@ function Nav({ search, setSearch, lightMode, setLightMode }) {
                        <div className="avatar-container">
                         { user.avatar ?  <img 
                         onMouseEnter={() => {setAvatarHovered(true)}} onMouseLeave={() => {setAvatarHovered(false)}} 
-                        src={user.avatar }></img> : <Avatar /> 
+                        src={user.avatar }></img> : <Avatar color={color}/> 
                        }
                         <div onMouseEnter={() => {setAvatarHovered(true)}} onMouseLeave={() => {setAvatarHovered(false)}}
                          className={avatarHovered ? "avatar-hovered-container" : "avatar-hovered-container account-options-not-visible"}>
-                            <button onClick={() => {localStorage.removeItem('token'), window.location.reload()}}>Wyloguj</button>
+                            <UserSettings />
                         </div>
                        </div>
                     </>

@@ -14,6 +14,7 @@ interface UserContextType {
     loadUser: () => Promise<void>
     logout: () => void
     login: (phone: string, prefix: string, password: string) => Promise<boolean>
+    token: () => string
 }
 
 const UserContext = createContext<UserContextType | null>(null)
@@ -40,8 +41,12 @@ export function UserProvider({ children }) {
         setUser(null)
     }
 
+    const token = () => {
+        return localStorage.getItem('token')
+    }
+
     return (
-        <UserContext.Provider value={{ user, loadUser, logout, login }}>
+        <UserContext.Provider value={{ user, loadUser, logout, login, token }}>
             {children}
         </UserContext.Provider>
     )
