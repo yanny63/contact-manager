@@ -8,6 +8,7 @@ interface resError {
 }
 
 interface ChatsInt {
+    id: string
     phone: string
     prefix: string
     nickname?: string
@@ -113,7 +114,6 @@ export async function newContact(contact: object) {
         return data
     }
     catch (err) {
-        alert(err)
         console.log(err)
     }
 }
@@ -247,13 +247,20 @@ export async function getChat(id: string) {
     if (!token || token === '') {
         throw new Error('Uzytkownik niezalogowany')
     }
-    const res = await fetch("/API/chat", {
-        headers: {"Authorization": `Bearer ${token}`},
-        body: id
+    const res = await fetch(`${BASE_URL}/API/chat?conversation_id=${String(id)}`, {
+        headers: {"Authorization": `Bearer ${token}`}
     })
     if (!res.ok) {
         const data : resError = await res.json()
         throw new Error(data.detail || `Błąd serwera: ${data.status}`)
     }
-    return res.json()
+    const data = await res.json()
+    console.log(data)
+    return data.map((m: any) => ({
+        senderId: m.sender_id,
+        text: m.body,
+        createdAt: m.created_at,
+        readAt: m.read_at,
+        messageId: m.id,
+    }));
 }

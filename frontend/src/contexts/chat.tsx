@@ -8,7 +8,6 @@ export function ChatProvider({ children }) {
     const { token } = useUser()
 
     const t = token() 
-    console.log('Token (chat.tsx): ', t)
 
     const chatSocket = useSocket(t)
 
@@ -17,4 +16,12 @@ export function ChatProvider({ children }) {
             { children }
         </ChatContext.Provider>
     )
+}
+
+export const useChat = () => {
+    const context = useContext(ChatContext)
+    if (!context) {
+        throw new Error("useChat musi byc uzyty w useProvider")
+    }
+    return context
 }

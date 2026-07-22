@@ -1,10 +1,13 @@
-import { useState, useEffect, useRef, KeyboardEvent } from 'react';
+import { useState, useEffect, useRef, KeyboardEvent, ChangeEvent } from 'react';
 import { getContacts, getChats, getMe, getChat } from '../ts/api';
 import { formatPhoneNumber, formatPhoneNumberIntl } from 'react-phone-number-input';
-import { span } from 'framer-motion/client';
+import { AnimatePresence, motion } from 'framer-motion';
 import Skeleton from '../skeletons/skeleton';
 import EmojiPicker, { EmojiStyle, Theme, EmojiClickData } from 'emoji-picker-react';
 import { useUser } from '../contexts/context';
+import { useChat } from '../contexts/chat'; 
+import { IconDots } from '@tabler/icons-react';
+import { useForceUpdate } from '../ts/utils';
 
 function SearchInput({ setSearch }) {
     return (
@@ -20,6 +23,7 @@ function SearchInput({ setSearch }) {
 function Attachments() {
     return (
         <div className='attachment-container'>
+            <input hidden type='file' accept='image/*, video/*, audio/*, application/pdf, .doc, .docx, .xls, .xlsx, .zip'/>
             <div className='attachment-icon'>
                 <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-paperclip">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
@@ -30,22 +34,63 @@ function Attachments() {
     )
 }
 
-function MessageInput({ message, setMessage, trackCursor, buttonRef }) {
+function MessageInput({ id, sendTyping, message, setMessage, trackCursor, buttonRef, timeoutRef }) {
 
     function handleEnter(e: KeyboardEvent<HTMLInputElement>) {
         if (e.key === "Enter" && !e.shiftKey && buttonRef.current) {
             buttonRef.current.click()
+            clearTimeout(timeoutRef.current)
+            sendTyping(id, false)
         }
+    }
+    const handleTyping = () => {
+        sendTyping(id, true)
+
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current)
+        }
+        
+        timeoutRef.current = window.setTimeout(() => {
+            sendTyping(id, false)
+        }, 3000)
+    }
+
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value
+
+        if (value === '') {
+            clearTimeout(timeoutRef.current)
+            sendTyping(id, false)
+            return
+        }
+
+        handleTyping()
     }
 
     return (
-        <input id='message' value={message} type='text' placeholder='Zacznij pisać...' onKeyUp={trackCursor} onClick={trackCursor} onChange={(e) => {setMessage(e.target.value)}} onKeyDown={handleEnter} />
+        <input id='message' value={message} type='text' placeholder='Zacznij pisać...' onKeyUp={trackCursor} 
+        onClick={trackCursor} 
+        onChange={(e) => {
+            setMessage(e.target.value);
+            handleChange(e)
+        }} 
+        onKeyDown={handleEnter} />
     )
 }
 
-function SendButton( { message, buttonRef }) {
+function SendButton( { message, setMessage, buttonRef, sendMessage, id, timeoutRef, sendTyping }) {
+
+    function handleButtonClick() {
+        if (!message.trim()) return
+
+        sendMessage(id, message)
+        setMessage('')
+        clearTimeout(timeoutRef.current)
+        sendTyping(id, false)
+    }
+
     return (
-        <button ref={buttonRef} className='send-button' disabled={!message.length}>
+        <button ref={buttonRef} className='send-button' onClick={() => {handleButtonClick()}} disabled={!message.length}>
             <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-send">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                 <path d="M10 14l11 -11" />
@@ -76,11 +121,14 @@ function Emojis({ lightMode, emojisFocused, setEmojisFocused, pickerRef, handleC
     )
 }
 
-function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused, setEmojisFocused }) {
+function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused, setEmojisFocused, user }) {
     const pickerRef = useRef<HTMLDivElement>(null)
     const cursorPosRef = useRef<number | null>(null)
     const inputRef = useRef<HTMLInputElement>(null)
     const buttonRef = useRef<HTMLButtonElement>(null)
+    const timeoutRef = useRef<number | null>(null)
+
+    const { messagesByConversation, typingByConversation, setConversationMessages, sendMessage, sendTyping } = useChat()
 
     function trackCursor() {
         if (inputRef.current) {
@@ -116,13 +164,26 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
         if (emojisFocused) {
             document.addEventListener('mousedown', handleClick)
         }
-
         return () => document.removeEventListener('mousedown', handleClick)
     }, [emojisFocused])
+
+    useEffect(() => {
+        async function loadChat() {
+            const data = await getChat(String(id))
+
+            setConversationMessages(id, data)
+        }
+        loadChat()
+    }, [id])
+
+    const messages = messagesByConversation[id] ?? []
+    const typing = typingByConversation[id] ?? new Set()
+    const isTyping = typing.has(info.id)
+
     return (
         <div className='chat-open'>
             <div className='chat-header'>
-                <Avatar name={info.nickname ? info.nickname : info.prefix} />
+                <Avatar user={info} />
                 <div>
                     {info.nickname ? (
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -136,20 +197,49 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
                     )}
                 </div>
             </div>
-            <div className='chat-content'></div>
+            <div className='chat-content'>
+                { messages.map((message, i) => (
+                    <div key={message.messageId ?? i} className={message.senderId === user.id ? 'message-container user' : 'message-container other'}>
+                        <div className='message-avatar'>
+                            { message.senderId === user.id ? 
+                            user.avatar ? <img src={user.avatar} /> : <Avatar user={user} /> 
+                            : info.picture ? <img src={info.picture} /> : <Avatar user={info} />}
+                        </div>
+                        <div className={message.senderId === user.id ? "message me" : "message others"}>
+                            { message.text }
+                        </div>
+                    </div>
+                ))}
+                <AnimatePresence>
+                    { isTyping && 
+                    <motion.div 
+                    className='typing-container'
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    >
+                        { info.picture ? <img src={info.picture} /> : <Avatar user={info} /> }
+                        <div className='typing'>
+                            <IconDots stroke={2} />
+                        </div>
+                    </motion.div>}
+                </AnimatePresence>
+            </div>
             <div className='chat-input'>
                 <Attachments />
-                <MessageInput buttonRef={buttonRef} message={message} setMessage={setMessage} trackCursor={trackCursor} />
+                <MessageInput id={id} sendTyping={sendTyping} buttonRef={buttonRef} message={message} setMessage={setMessage} trackCursor={trackCursor} timeoutRef={timeoutRef} />
                 <Emojis lightMode={lightMode} emojisFocused={emojisFocused} setEmojisFocused={setEmojisFocused} pickerRef={pickerRef} handleClick={handleEmojiClick} />
-                <SendButton buttonRef={buttonRef} message={message} />
+                <SendButton buttonRef={buttonRef} message={message} setMessage={setMessage} sendMessage={sendMessage} id={id} timeoutRef={timeoutRef} sendTyping={sendTyping} />
             </div>
         </div>
     )
 }
 
-function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode }) { 
+function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode, asideVisible, setAsideVisible }) { 
 
     interface ChatsInt {
+        id: string
         phone: string
         prefix: string
         nickname?: string
@@ -158,6 +248,12 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
         created_at?: string
         favourite: boolean
         conversation_id: number
+    }
+
+    interface AvatarPerson {
+        nickname: string | null;
+        phone: string;
+        prefix: string;
     }
 
     const [ search, setSearch ] = useState('')
@@ -194,6 +290,22 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
         setCurrentlyOpen(null)
     }, [user])
 
+    const { messagesByConversation } = useChat()
+
+    useEffect(() => {
+        setChats((prev) => prev.map((chat) => {
+            const msgs = messagesByConversation[chat.conversation_id]
+            if (!msgs || msgs.length === 0) return chat
+
+            const lastMsg = msgs[msgs.length - 1]
+            return {
+                ...chat,
+                body: lastMsg.text,
+                created_at: lastMsg.createdAt
+            }
+        }))
+    }, [messagesByConversation])
+
     function Buttons() {
         return (
             <div className='tabs'>
@@ -226,29 +338,18 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
         return (
             <div className='chats-container'>
                 {Array(3).fill(0).map((_, i) => (
-                    <div className='chat'>
-                        <Skeleton width='40px' height='40px' circle={true}/>
-                        <div className='skeleton-name-msg'>
-                            <Skeleton width='120px' height='20px' />
-                            <Skeleton width='80px' height='20px' />
-                        </div> 
+                    <div key={i} className='chat'>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <Skeleton width='40px' height='40px' circle={true}/>
+                            <div className='skeleton-name-msg'>
+                                <Skeleton width='120px' height='20px' />
+                                <Skeleton width='80px' height='20px' />
+                            </div> 
+                        </div>
                     </div>
                 ))}
             </div>
         )
-    }
-
-    async function openChat(id: string) {
-        try {
-            const chat = await getChat(id)
-            console.log(chat)
-        } 
-        catch (err) {
-            if (err instanceof Error) {
-                console.error(err.message)
-            }
-        }
-        
     }
 
     function ChatPlaceholder() {
@@ -274,7 +375,28 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
         )
     }
 
+    function formatTime(isotime: string) {
+        const date = new Date(isotime)
+        const now = new Date()
+
+        const diffMs = now.getTime() - date.getTime()
+        const diffSec = Math.floor(diffMs / 1000)
+        const diffMin = Math.floor(diffSec / 60)
+        const diffHour = Math.floor(diffMin / 60)
+        const diffDay = Math.floor(diffHour / 24)
+
+        if (diffSec < 60) return "przed chwilą"
+        if (diffMin < 60) return `${diffMin} min temu`
+        if (diffHour < 24) return `${diffHour} godz. temu`
+        if (diffDay < 7) return `${diffDay} dni temu`
+
+        return date.toLocaleTimeString([], { day: 'numeric', month: 'short' })
+    }
+
     function DisplayChats() {
+
+        useForceUpdate()
+
         return (
             <div className='chats-container'>
                 { !chatsLoaded ? 
@@ -294,29 +416,35 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
                 </div> : 
                 
                 currentlyDisplayed === 'all' ? search ? chats.filter(n => n.nickname.toLowerCase().includes(search.toLowerCase())).map((numb) => (
-                    <div className='chat' onClick={() => {setCurrentlyOpen(numb.conversation_id), setChatOpen(true)}} key={numb.conversation_id}> 
-                        <Avatar name={numb.nickname ? numb.nickname : numb.prefix }/>
-                        <div className='central-chat-container'>
-                            <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
-                            <span className='last-message'>{ numb.body }</span>
+                    <div className='chat' onClick={() => {setCurrentlyOpen(numb.conversation_id)
+                    setCurrentInfo({id: numb.id, nickname: numb.nickname || null, phone: numb.phone, prefix: numb.prefix, picture: numb.picture || null, favourite: numb.favourite}),
+                     setChatOpen(true)}} key={numb.conversation_id}> 
+                        <div className='inner-chat-container'>
+                            <Avatar user={numb}/>
+                            <div className='central-chat-container'>
+                                <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
+                                <span className='last-message'>{ numb.body }</span>
+                            </div>
                         </div>
                         <div className='created-at'>
-                            <span>{ numb.created_at }</span>
+                            <span className='created-at-display'>{ formatTime(numb.created_at) }</span>
                             <span>{/* Not read */}</span>
                         </div>
                     </div>
                 )) : chats.map((numb) => (
                     <div className='chat' onClick={() => {setCurrentlyOpen(numb.conversation_id), 
                         setChatOpen(true),
-                        setCurrentInfo({nickname: numb.nickname || null, phone: numb.phone, prefix: numb.prefix, picture: numb.picture || null, favourite: numb.favourite})}} 
+                        setCurrentInfo({id: numb.id, nickname: numb.nickname || null, phone: numb.phone, prefix: numb.prefix, picture: numb.picture || null, favourite: numb.favourite})}} 
                         key={numb.conversation_id}> 
-                        <Avatar name={numb.nickname ? numb.nickname : numb.prefix }/>
-                        <div className='central-chat-container'>
-                            <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
-                            <span className='last-message'>{ numb.body }</span>
+                        <div className='inner-chat-container'>
+                            <Avatar user={numb}/>
+                            <div className='central-chat-container'>
+                                <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
+                                <span className='last-message'>{ numb.body }</span>
+                            </div>
                         </div>
                         <div className='created-at'>
-                            <span>{ numb.created_at }</span>
+                            <span className='created-at-display'>{ formatTime(numb.created_at) }</span>
                             <span>{/* Not read */}</span>
                         </div>
                     </div>
@@ -324,15 +452,17 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
                 : currentlyDisplayed === 'fav' ? search ? chats.filter(n => n.nickname.toLowerCase().includes(search.toLowerCase())).filter(numb => numb.favourite).map((numb => (
                     <div className='chat' onClick={() => {setCurrentlyOpen(numb.conversation_id), 
                         setChatOpen(true),
-                        setCurrentInfo({nickname: numb.nickname || null, phone: numb.phone, prefix: numb.prefix, picture: numb.picture || null, favourite: numb.favourite})}} 
+                        setCurrentInfo({id: numb.id, nickname: numb.nickname || null, phone: numb.phone, prefix: numb.prefix, picture: numb.picture || null, favourite: numb.favourite})}} 
                         key={numb.conversation_id}>
-                        <Avatar name={numb.nickname ? numb.nickname : numb.prefix } />
-                        <div className='central-chat-container'>
-                            <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
-                            <span className='last-message'>{ numb.body }</span>
+                        <div className='inner-chat-container'>
+                            <Avatar user={numb}/>
+                            <div className='central-chat-container'>
+                                <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
+                                <span className='last-message'>{ numb.body }</span>
+                            </div>
                         </div>
                         <div className='created-at'>
-                            <span>{ numb.created_at }</span>
+                            <span className='created-at-display'>{ formatTime(numb.created_at) }</span>
                             <span>{/* Not read */}</span>
                         </div>
                     </div>
@@ -342,13 +472,15 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
                     setChatOpen(true),
                     setCurrentInfo({nickname: numb.nickname || null, phone: numb.phone, prefix: numb.prefix, picture: numb.picture || null, favourite: numb.favourite})}}
                     key={numb.conversation_id}>
-                        <Avatar name={numb.nickname ? numb.nickname : numb.prefix } />
-                        <div className='central-chat-container'>
-                            <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
-                            <span className='last-message'>{ numb.body }</span>
+                        <div className='inner-chat-container'>
+                            <Avatar user={numb}/>
+                            <div className='central-chat-container'>
+                                <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
+                                <span className='last-message'>{ numb.body }</span>
+                            </div>
                         </div>
                         <div className='created-at'>
-                            <span>{ numb.created_at }</span>
+                            <span className='created-at-display'>{ formatTime(numb.created_at) }</span>
                             <span>{/* Not read */}</span>
                         </div>
                     </div>
@@ -374,7 +506,7 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
             <div className={chatOpen ? 'chat-container' : 'chat-container chat-not-visible'}>
                 {currentlyOpen ? (
                     user?.id && <Chat id={currentlyOpen} info={currentInfo} Avatar={Avatar} message={message} 
-                    setMessage={setMessage} lightMode={lightMode} emojisFocused={emojisFocused} setEmojisFocused={setEmojisFocused} /> 
+                    setMessage={setMessage} lightMode={lightMode} emojisFocused={emojisFocused} setEmojisFocused={setEmojisFocused} user={user} /> 
                 ) : (
                     <ChatPlaceholder />
                 )}

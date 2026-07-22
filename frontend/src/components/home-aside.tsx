@@ -6,6 +6,7 @@ import { newContact, getContacts, favToggle } from "../ts/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Link } from "react-router-dom"
 import { useUser } from "../contexts/context"
+import { aside } from "framer-motion/client"
 
 function NotLoggedInOverlay({ popupVisible, setPopupVisible, phone, setPhone }) {
 
@@ -161,7 +162,6 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
                 return
             }
             contact['id'] = backendId?.id
-            console.log(contact)
             setNumbers([...numbers, contact])
             setNewContactError(false)
             form.reset()
@@ -182,8 +182,6 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
             }
             setNumbers(prev => prev.map(item => item.id === id ? { ...item, favourite: !item.favourite } : item))
             setFavError(false)
-            console.log("XD")
-            console.log(numbers)
         }
         else {
             // add a contact to favs
@@ -211,7 +209,7 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
                     numbers.filter(numb => numb.favourite).map((fav) => (
                         <li className="isNumbersElement" key={fav.id}>
                             <div className="fav_image">
-                                { fav.avatar ? <img src={fav.avatar} className="" /> : <Avatar name={fav.nickname ? fav.nickname : fav.phone} />}
+                                { fav.avatar ? <img src={fav.avatar} className="" /> : <Avatar user={fav}/>}
                             </div>
                             <span className="liListElement">{fav.nickname ? fav.nickname.slice(0, 30) : `+${fav.prefix} ${fav.phone}`}</span>
                             <Star active={fav.favourite} onClick={() => toggleFav(fav.id, "favourites")}></Star> 
@@ -220,7 +218,7 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
                     : numbers.map((number) => (
                         <li className="isNumbersElement" key={number.id}>
                             <div className="fav_image">
-                                { number.avatar ? <img src={number.avatar} className="" /> : <Avatar name={number.nickname ? number.nickname : number.phone} /> }
+                                { number.avatar ? <img src={number.avatar} className="" /> : <Avatar user={number} /> }
                             </div>
                             <span className="liListElement">{number.nickname ? number.nickname.slice(0, 30) : `+${number.prefix} ${number.phone}`}</span>
                             <Star active={number.favourite} onClick={() => toggleFav(number.id, number.favourite ? "favourites" : "not")}></Star>
@@ -233,7 +231,7 @@ function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Av
 
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
+        <div className="aside-container">
             <form className='add-contact-form' onSubmit={addContact}>
                 <h3>Nowy Kontakt</h3>
                 <PhoneInput 
