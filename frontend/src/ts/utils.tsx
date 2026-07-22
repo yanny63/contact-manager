@@ -13,10 +13,11 @@ export function useForceUpdate(interval: number = 30000) {
 interface AnimateTextProps {
     text: string
     className?: string
-    isSpan?: true
+    isSpan?: boolean
+    intervalSeconds?: number
 }
 
-export function AnimateText({ text, className = '', isSpan = true }: AnimateTextProps) {
+export function AnimateText({ text, className = '', isSpan = true, intervalSeconds = 300 }: AnimateTextProps) {
     const [ animatedText, setAnimatedText ] = useState<string>('')
 
     useEffect(() => {
@@ -29,7 +30,7 @@ export function AnimateText({ text, className = '', isSpan = true }: AnimateText
             if (index === text.length) {
                 clearInterval(interval)
             }
-        }, 300)
+        }, intervalSeconds)
 
         
 
