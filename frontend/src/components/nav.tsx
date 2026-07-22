@@ -3,6 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useUser } from "../contexts/context";
 import { formatPhoneNumberIntl } from "react-phone-number-input";
 import { IconLogout } from '@tabler/icons-react';
+import { AnimateText } from "../ts/utils";
 
 function Nav({ search, setSearch, lightMode, setLightMode }) {
 
@@ -40,7 +41,7 @@ function Nav({ search, setSearch, lightMode, setLightMode }) {
                         c-3.21,2.33-6.86,5.02-5.61,8.18L33.84,50.25L33.84,50.25L33.84,50.25z"/>
                     </g>
                 </svg>
-                <span style={{ fontStyle: "italic" }}>Linkr</span>
+                <AnimateText text='Linkr' className="animated-logo"/>
             </div>
         )
     }
