@@ -1,5 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
+interface WebSocketMessage {
+    type: string
+    conversationId: string
+    senderId: string
+    messageId?: string
+    text?: string
+    createdAt?: string
+}
+
 export function useSocket(token) {
 
     const [ isConnected, setIsConnected ] = useState<boolean>(false)
@@ -20,7 +29,7 @@ export function useSocket(token) {
         }
 
         ws.current.onmessage = (event) => {
-            const data = JSON.parse(event.data)
+            const data : WebSocketMessage = JSON.parse(event.data)
             const { conversationId, type, senderId } = data
 
             if (type === "message") {

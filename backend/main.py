@@ -307,7 +307,7 @@ async def chat(token: str = Depends(oauth_scheme), conversation_id: str = Query(
         raise HTTPException(status_code=401, detail="Uzytkownik niezalogowany")
 
     c = await fetch_all(
-        """SELECT m.sender_id, m.body, m.created_at, m.read_at, m_a.type, m_a.url
+        """SELECT m.id, m.sender_id, m.body, m.created_at, m.read_at, m_a.type, m_a.url
         FROM messages AS m
         LEFT JOIN message_attachments AS m_a ON m.id = m_a.message_id
         WHERE m.conversation_id = %s

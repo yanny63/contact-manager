@@ -6,8 +6,9 @@ import Skeleton from '../skeletons/skeleton';
 import EmojiPicker, { EmojiStyle, Theme, EmojiClickData } from 'emoji-picker-react';
 import { useUser } from '../contexts/context';
 import { useChat } from '../contexts/chat'; 
-import { IconDots } from '@tabler/icons-react';
+import { IconDots, IconMoodSmile, IconShare3, IconDotsVertical, IconPaperclip } from '@tabler/icons-react';
 import { useForceUpdate } from '../ts/utils';
+import * as Dialog from '@radix-ui/react-dialog'
 
 function SearchInput({ setSearch }) {
     return (
@@ -20,15 +21,39 @@ function SearchInput({ setSearch }) {
     )
 }
 
-function Attachments() {
+interface AttachmentPreview {
+    file: File
+    previewUrl: string
+    type: "image" | "video" | "other"
+}
+
+function Attachments({ fileInputRef, attachment, setAttachment }) {
+
+    function handleFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        const previewUrl = URL.createObjectURL(file)
+        console.log(`GENERATED URL: ${previewUrl}`)
+
+        const type = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "other"
+        setAttachment({ file, previewUrl, type })
+    }
+
+    useEffect(() => {
+        return () => {
+            if (attachment) {
+                URL.revokeObjectURL(attachment.previewUrl)
+            }
+        }
+    }, [attachment])
+
     return (
         <div className='attachment-container'>
-            <input hidden type='file' accept='image/*, video/*, audio/*, application/pdf, .doc, .docx, .xls, .xlsx, .zip'/>
-            <div className='attachment-icon'>
-                <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-paperclip">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5 -6.5a3 3 0 0 0 -6 -6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5 -6.5" />
-                </svg>
+            <input ref={fileInputRef} onChange={handleFileInputChange} hidden
+            type='file' accept='image/*, video/*, audio/*, application/pdf, .doc, .docx, .xls, .xlsx, .zip' />
+            <div className='attachment-icon' onClick={() => {fileInputRef.current?.click()}}>
+                <IconPaperclip stroke={2} />
             </div>
         </div>
     )
@@ -78,10 +103,10 @@ function MessageInput({ id, sendTyping, message, setMessage, trackCursor, button
     )
 }
 
-function SendButton( { message, setMessage, buttonRef, sendMessage, id, timeoutRef, sendTyping }) {
+function SendButton( { message, attachment, setAttachment, setMessage, buttonRef, sendMessage, id, timeoutRef, sendTyping }) {
 
     function handleButtonClick() {
-        if (!message.trim()) return
+        if (!message.trim() && !attachment) return
 
         sendMessage(id, message)
         setMessage('')
@@ -127,6 +152,7 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
     const inputRef = useRef<HTMLInputElement>(null)
     const buttonRef = useRef<HTMLButtonElement>(null)
     const timeoutRef = useRef<number | null>(null)
+    const bottomChatRef = useRef<HTMLDivElement | null>(null)
 
     const { messagesByConversation, typingByConversation, setConversationMessages, sendMessage, sendTyping } = useChat()
 
@@ -180,6 +206,26 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
     const typing = typingByConversation[id] ?? new Set()
     const isTyping = typing.has(info.id)
 
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const [ attachment, setAttachment ] = useState<AttachmentPreview | null>(null)
+
+    const handleCancel = () => {
+        if (attachment) URL.revokeObjectURL(attachment.previewUrl)
+        setAttachment(null)
+        if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+
+    useEffect(() => {
+        if (!bottomChatRef.current) return
+        bottomChatRef.current?.scrollIntoView({
+            behavior: 'smooth'
+        })
+    }, [messages])
+
+    const [ messageHovered, setMessageHovered ] = useState<number | null>(null)
+    const [ attachmentHovered, setAttachmentHovered ] = useState<boolean>(false)
+    const [ previewOpen, setPreviewOpen ] = useState<boolean>(false)
+
     return (
         <div className='chat-open'>
             <div className='chat-header'>
@@ -199,15 +245,22 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
             </div>
             <div className='chat-content'>
                 { messages.map((message, i) => (
-                    <div key={message.messageId ?? i} className={message.senderId === user.id ? 'message-container user' : 'message-container other'}>
+                    <div key={message.messageId ?? i} onMouseEnter={() => {setMessageHovered(message.messageId)}}
+                    className={message.senderId === user.id ? 'message-container user' : 'message-container other'}>
                         <div className='message-avatar'>
                             { message.senderId === user.id ? 
-                            user.avatar ? <img src={user.avatar} /> : <Avatar user={user} /> 
+                            <></> 
                             : info.picture ? <img src={info.picture} /> : <Avatar user={info} />}
                         </div>
                         <div className={message.senderId === user.id ? "message me" : "message others"}>
                             { message.text }
                         </div>
+                        { messageHovered === message.messageId && 
+                        <div className={message.senderId === user.id ? "message-management-me" : "message-management-others" }>
+                            <IconMoodSmile stroke={2} />
+                            <IconShare3 stroke={2} />
+                            <IconDotsVertical stroke={2} />
+                        </div>}
                     </div>
                 ))}
                 <AnimatePresence>
@@ -225,13 +278,36 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
                         </div>
                     </motion.div>}
                 </AnimatePresence>
+                <div ref={bottomChatRef}></div>
             </div>
             <div className='chat-input'>
-                <Attachments />
-                <MessageInput id={id} sendTyping={sendTyping} buttonRef={buttonRef} message={message} setMessage={setMessage} trackCursor={trackCursor} timeoutRef={timeoutRef} />
-                <Emojis lightMode={lightMode} emojisFocused={emojisFocused} setEmojisFocused={setEmojisFocused} pickerRef={pickerRef} handleClick={handleEmojiClick} />
-                <SendButton buttonRef={buttonRef} message={message} setMessage={setMessage} sendMessage={sendMessage} id={id} timeoutRef={timeoutRef} sendTyping={sendTyping} />
+                { attachment && 
+                <div className='chat-attachments' 
+                onMouseEnter={() => (setAttachmentHovered(true))} 
+                onMouseLeave={() => (setAttachmentHovered(false))}>
+                    { attachmentHovered && <button className='attachment-remover' onClick={handleCancel}>X</button> }
+                    { attachment.type === 'image' ? <img src={attachment.previewUrl} alt='podgląd' onClick={() => {setPreviewOpen(true)}} /> 
+                    : attachment.type === 'video' ? <video src={attachment.previewUrl} controls onClick={() => {setPreviewOpen(true)}} /> :
+                    <p>📎{attachment.file.name}</p>}
+                </div>
+                }
+                <div className='inner-chat-input'>
+                    <Attachments fileInputRef={fileInputRef} attachment={attachment} setAttachment={setAttachment} />
+                    <MessageInput id={id} sendTyping={sendTyping} buttonRef={buttonRef} message={message} setMessage={setMessage} trackCursor={trackCursor} timeoutRef={timeoutRef} />
+                    <Emojis lightMode={lightMode} emojisFocused={emojisFocused} setEmojisFocused={setEmojisFocused} pickerRef={pickerRef} handleClick={handleEmojiClick} />
+                    <SendButton buttonRef={buttonRef} attachment={attachment} setAttachment={setAttachment} message={message} setMessage={setMessage} sendMessage={sendMessage} id={id} timeoutRef={timeoutRef} sendTyping={sendTyping} />
+                </div>
             </div>
+            { attachment &&
+            <Dialog.Root open={previewOpen}>
+                <Dialog.Portal>
+                    <Dialog.Overlay className='preview-overlay' onClick={() => (setPreviewOpen(false))} />
+                    <Dialog.Content className='preview-content-container'>
+                        { attachment.type === 'image' ? <img src={attachment.previewUrl} alt='podgląd' /> : 
+                        attachment.type === 'video' ? <video src={attachment.previewUrl} controls /> : <></> }
+                    </Dialog.Content>
+                </Dialog.Portal>
+            </Dialog.Root> }
         </div>
     )
 }
@@ -423,7 +499,7 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
                             <Avatar user={numb}/>
                             <div className='central-chat-container'>
                                 <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
-                                <span className='last-message'>{ numb.body }</span>
+                                <span className='last-message'>{ numb.body.length > 40 ? `${numb.body.slice(0, 40)}...` : numb.body.slice(0, 40) }</span>
                             </div>
                         </div>
                         <div className='created-at'>
@@ -440,7 +516,7 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
                             <Avatar user={numb}/>
                             <div className='central-chat-container'>
                                 <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
-                                <span className='last-message'>{ numb.body }</span>
+                                <span className='last-message'>{ numb.body.length > 40 ? `${numb.body.slice(0, 40)}...` : numb.body.slice(0, 40) }</span>
                             </div>
                         </div>
                         <div className='created-at'>
@@ -458,7 +534,7 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
                             <Avatar user={numb}/>
                             <div className='central-chat-container'>
                                 <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
-                                <span className='last-message'>{ numb.body }</span>
+                                <span className='last-message'>{ numb.body.length > 40 ? `${numb.body.slice(0, 40)}...` : numb.body.slice(0, 40) }</span>
                             </div>
                         </div>
                         <div className='created-at'>
