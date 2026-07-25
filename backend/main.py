@@ -307,13 +307,14 @@ async def chat(token: str = Depends(oauth_scheme), conversation_id: str = Query(
         raise HTTPException(status_code=401, detail="Uzytkownik niezalogowany")
 
     c = await fetch_all(
-        """SELECT m.id, m.sender_id, m.body, m.created_at, m.read_at, m_a.type, m_a.url
+        """SELECT m.id, m.sender_id, m.body, m.created_at, m.read_at, m.edited_at, m_a.type, m_a.url
         FROM messages AS m
         LEFT JOIN message_attachments AS m_a ON m.id = m_a.message_id
         WHERE m.conversation_id = %s
         ORDER BY m.created_at ASC LIMIT 20""",
         (int(conversation_id),)
     )
+    print(c)
     return c
 
 
@@ -334,6 +335,7 @@ async def chat_endpoint(websocket: WebSocket, token: str = Query(...)):
         while True:
             raw = await websocket.receive_text()
             data = json.loads(raw)
+            print(f"DATA ---- {data}")
 
             conversation_id = data['conversationId']
             msg_type = data['type']
@@ -364,6 +366,40 @@ async def chat_endpoint(websocket: WebSocket, token: str = Query(...)):
                 for u_id in participant_ids:
                     if u_id in connections:
                         await connections[u_id].send_json(payload_out)
+
+            elif msg_type == "edit_message":
+                row = await fetch_one(
+                    """SELECT sender_id FROM messages WHERE id = %s""", (data["messageId"],)
+                )
+
+                if not row or row['sender_id'] != user_id:
+                    continue
+
+                edited = await fetch_one_commit(
+                    """UPDATE messages SET body = %s, edited_at = NOW() WHERE id = %s RETURNING edited_at""",
+                    (data["text"], data["messageId"])
+                )
+
+                payload_out = {
+                    "type": msg_type,
+                    "conversationId": conversation_id,
+                    "messageId": data["messageId"],
+                    "text": data["text"],
+                    "editedAt": edited["edited_at"].isoformat()
+                }
+
+                participants = await fetch_all(
+                    """SELECT user_id FROM conversation_participants WHERE conversation_id = %s""",
+                    (conversation_id,)
+                )
+
+                participant_ids = [p["user_id"] for p in participants]
+                
+                print(f"Connections: {connections}")
+                for u_id in participant_ids:
+                    if u_id in connections:
+                        await connections[u_id].send_json(payload_out) 
+
             else:
                 payload_out = {
                     "type": msg_type,

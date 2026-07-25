@@ -7,6 +7,7 @@ interface WebSocketMessage {
     messageId?: string
     text?: string
     createdAt?: string
+    editedAt?: string
 }
 
 export function useSocket(token) {
@@ -34,7 +35,15 @@ export function useSocket(token) {
 
             if (type === "message") {
                 setMessagesByConversation((prev) => ({
-                    ...prev, [conversationId]: [...(prev[conversationId] || []), data]
+                    ...prev, [conversationId]: [...(prev[conversationId] ?? []), data]
+                }))
+            }
+
+            if (type === "edit_message") {
+                setMessagesByConversation((prev) => ({
+                    ...prev, [conversationId]: (prev[conversationId] ?? []).map((msg) => (
+                        msg.messageId === data.messageId ? { ...msg, text: data.text, editedAt: data.editedAt} : msg
+                    ))
                 }))
             }
 
@@ -79,6 +88,12 @@ export function useSocket(token) {
         }
     }
 
+    const editMessage = (conversationId, messageId, text) => {
+        if (ws.current?.readyState === WebSocket.OPEN) {
+            ws.current.send(JSON.stringify({ type: "edit_message", conversationId, messageId, text }))
+        }
+    }
+
     const setConversationMessages  = (conversationId, messages) => {
         setMessagesByConversation(prev => ({...prev, [conversationId]: messages}))
     }
@@ -89,6 +104,7 @@ export function useSocket(token) {
         typingByConversation,
         setConversationMessages,
         sendMessage,
-        sendTyping
+        sendTyping,
+        editMessage
     }
 }

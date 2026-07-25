@@ -7,6 +7,17 @@ interface resError {
     status: number
 }
 
+interface ChatMessages {
+    id: string
+    sender_id: string
+    body?: string
+    created_at: string
+    read_at?: string
+    edited_at?: string
+    type?: string
+    url?: string
+}
+
 interface ChatsInt {
     id: string
     phone: string
@@ -254,13 +265,16 @@ export async function getChat(id: string) {
         const data : resError = await res.json()
         throw new Error(data.detail || `Błąd serwera: ${data.status}`)
     }
-    const data = await res.json()
+    const data : ChatMessages[] = await res.json()
     console.log(data)
-    return data.map((m: any) => ({
+    return data.map((m: ChatMessages) => ({
         senderId: m.sender_id,
         text: m.body,
         createdAt: m.created_at,
         readAt: m.read_at,
         messageId: m.id,
+        editedAt: m.edited_at,
+        url: m.url,
+        type: m.type
     }));
 }

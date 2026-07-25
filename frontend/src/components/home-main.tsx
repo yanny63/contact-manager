@@ -6,7 +6,7 @@ import Skeleton from '../skeletons/skeleton';
 import EmojiPicker, { EmojiStyle, Theme, EmojiClickData } from 'emoji-picker-react';
 import { useUser } from '../contexts/context';
 import { useChat } from '../contexts/chat'; 
-import { IconDots, IconMoodSmile, IconShare3, IconDotsVertical, IconPaperclip } from '@tabler/icons-react';
+import { IconDots, IconMoodSmile, IconShare3, IconDotsVertical, IconPaperclip, IconCheck, IconX } from '@tabler/icons-react';
 import { useForceUpdate } from '../ts/utils';
 import * as Dialog from '@radix-ui/react-dialog'
 
@@ -103,10 +103,10 @@ function MessageInput({ id, sendTyping, message, setMessage, trackCursor, button
     )
 }
 
-function SendButton( { message, attachment, setAttachment, setMessage, buttonRef, sendMessage, id, timeoutRef, sendTyping }) {
-
+function SendButton( { message, setMessage, buttonRef, sendMessage, id, timeoutRef, sendTyping }) {
     function handleButtonClick() {
-        if (!message.trim() && !attachment) return
+        if (!message.trim()) return
+
 
         sendMessage(id, message)
         setMessage('')
@@ -146,6 +146,28 @@ function Emojis({ lightMode, emojisFocused, setEmojisFocused, pickerRef, handleC
     )
 }
 
+interface EditingMessage {
+    conversationId: string
+    messageId: string
+    content: string
+}
+
+function MessageEditingInput({ editingMessage, setEditingMessage, editMessage }) {
+    function handleEditedSubmit() {
+        console.log(editingMessage)
+        if (!editingMessage.content.trim()) return
+        console.log(`Conversation id: ${editingMessage.conversationId}`)
+        editMessage(editingMessage.conversationId, editingMessage.messageId, editingMessage.content)
+        setEditingMessage(null)
+    }
+    return (
+        <div className='message-editing-input'>
+            <textarea id='message' value={ editingMessage.content } onChange={(e) => {setEditingMessage(prev => prev ? {...prev, content: e.target.value} : prev)}} />
+            <button onClick={() => {handleEditedSubmit()}}><IconCheck stroke={2} size={18} /></button>
+        </div>
+    )
+}
+
 function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused, setEmojisFocused, user }) {
     const pickerRef = useRef<HTMLDivElement>(null)
     const cursorPosRef = useRef<number | null>(null)
@@ -154,7 +176,7 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
     const timeoutRef = useRef<number | null>(null)
     const bottomChatRef = useRef<HTMLDivElement | null>(null)
 
-    const { messagesByConversation, typingByConversation, setConversationMessages, sendMessage, sendTyping } = useChat()
+    const { messagesByConversation, typingByConversation, setConversationMessages, sendMessage, sendTyping, editMessage } = useChat()
 
     function trackCursor() {
         if (inputRef.current) {
@@ -179,6 +201,11 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
             inputRef.current?.focus()
             inputRef.current?.setSelectionRange(newCurPos, newCurPos)
         })
+    }
+
+    function formatEditedTime(isoformat: string) {
+        const date = new Date(isoformat)
+        return date.toLocaleTimeString([], { hour: 'numeric', minute: 'numeric' } )
     }
 
     useEffect(() => {
@@ -220,11 +247,13 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
         bottomChatRef.current?.scrollIntoView({
             behavior: 'smooth'
         })
-    }, [messages])
+    }, [messages, typing])
 
     const [ messageHovered, setMessageHovered ] = useState<number | null>(null)
     const [ attachmentHovered, setAttachmentHovered ] = useState<boolean>(false)
     const [ previewOpen, setPreviewOpen ] = useState<boolean>(false)
+    const [ editingMessage, setEditingMessage ] = useState<EditingMessage | null>(null)
+    const [ messageManagementOn, setMessageManagementOn ] = useState<boolean>(false)
 
     return (
         <div className='chat-open'>
@@ -245,23 +274,35 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
             </div>
             <div className='chat-content'>
                 { messages.map((message, i) => (
-                    <div key={message.messageId ?? i} onMouseEnter={() => {setMessageHovered(message.messageId)}}
-                    className={message.senderId === user.id ? 'message-container user' : 'message-container other'}>
-                        <div className='message-avatar'>
-                            { message.senderId === user.id ? 
-                            <></> 
-                            : info.picture ? <img src={info.picture} /> : <Avatar user={info} />}
+                    <div className='main-msg-container' 
+                    style={message.senderId === user.id ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }}>
+                        <div key={message.messageId ?? i} onMouseEnter={() => {setMessageHovered(message.messageId)}}
+                        className={message.senderId === user.id ? 'message-container user' : 'message-container other'}>
+                            { message.senderId !== user.id ? 
+                            <div className='message-avatar'>
+                                { info.picture ? <img src={info.picture} /> : <Avatar user={info} /> }
+                            </div> : <></> }
+                            
+                            <div className={message.senderId === user.id ? "message me" : "message others"}>
+                                { message.text }
+                            </div>
+                            { messageHovered === message.messageId && 
+                            <div className={message.senderId === user.id ? "message-management-me" : "message-management-others" }>
+                                <IconMoodSmile stroke={2} />
+                                <IconShare3 stroke={2} />
+                                <IconDotsVertical stroke={2} onClick={() => {setMessageManagementOn(true)}} />
+                                { messageManagementOn && 
+                                <div className={message.senderId === user.id ? 'manage-message-choices users-message' : 'manage-message-choices others-message'} onMouseLeave={() => {setMessageManagementOn(false)}}>
+                                    { message.senderId !== user.id ? <></> : 
+                                    <>
+                                        <span onClick={() => {setEditingMessage({ conversationId: id, messageId: message.messageId, content: message.text })}}>Edytuj wiadomość</span>
+                                        <span>Usuń wiadomość</span>
+                                    </>}
+                                </div> }
+                            </div>}
                         </div>
-                        <div className={message.senderId === user.id ? "message me" : "message others"}>
-                            { message.text }
-                        </div>
-                        { messageHovered === message.messageId && 
-                        <div className={message.senderId === user.id ? "message-management-me" : "message-management-others" }>
-                            <IconMoodSmile stroke={2} />
-                            <IconShare3 stroke={2} />
-                            <IconDotsVertical stroke={2} />
-                        </div>}
-                    </div>
+                        { message.editedAt && <span className='edited-at-span'>Edytowano o {formatEditedTime(message.editedAt)}</span>}
+                    </div> // xd
                 ))}
                 <AnimatePresence>
                     { isTyping && 
@@ -291,12 +332,37 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
                     <p>📎{attachment.file.name}</p>}
                 </div>
                 }
-                <div className='inner-chat-input'>
-                    <Attachments fileInputRef={fileInputRef} attachment={attachment} setAttachment={setAttachment} />
-                    <MessageInput id={id} sendTyping={sendTyping} buttonRef={buttonRef} message={message} setMessage={setMessage} trackCursor={trackCursor} timeoutRef={timeoutRef} />
-                    <Emojis lightMode={lightMode} emojisFocused={emojisFocused} setEmojisFocused={setEmojisFocused} pickerRef={pickerRef} handleClick={handleEmojiClick} />
-                    <SendButton buttonRef={buttonRef} attachment={attachment} setAttachment={setAttachment} message={message} setMessage={setMessage} sendMessage={sendMessage} id={id} timeoutRef={timeoutRef} sendTyping={sendTyping} />
-                </div>
+                <motion.div layout>
+                    <AnimatePresence mode='popLayout'>
+                    { editingMessage ? 
+
+                        <motion.div className='inner-chat-input editing'
+                        key="editing"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}> 
+                            <div className='editing-message-container'>
+                                <span>Edytuj wiadomość</span>
+                                <button onClick={() => {setEditingMessage(null)}} className='editing-message-button'><IconX stroke={2} size={12} /></button>
+                            </div>
+                            <MessageEditingInput editingMessage={editingMessage} setEditingMessage={setEditingMessage} editMessage={editMessage} />
+                        </motion.div>
+                    
+                    :
+                    <motion.div className='inner-chat-input'
+                    key="normal"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}>
+                        <Attachments fileInputRef={fileInputRef} attachment={attachment} setAttachment={setAttachment} />
+                        <MessageInput id={id} sendTyping={sendTyping} buttonRef={buttonRef} message={message} setMessage={setMessage} trackCursor={trackCursor} timeoutRef={timeoutRef} />
+                        <Emojis lightMode={lightMode} emojisFocused={emojisFocused} setEmojisFocused={setEmojisFocused} pickerRef={pickerRef} handleClick={handleEmojiClick} />
+                        <SendButton buttonRef={buttonRef} message={message} setMessage={setMessage} sendMessage={sendMessage} id={id} timeoutRef={timeoutRef} sendTyping={sendTyping} />
+                    </motion.div>}
+                    </AnimatePresence>
+                </motion.div>
             </div>
             { attachment &&
             <Dialog.Root open={previewOpen}>
@@ -464,7 +530,10 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
         if (diffSec < 60) return "przed chwilą"
         if (diffMin < 60) return `${diffMin} min temu`
         if (diffHour < 24) return `${diffHour} godz. temu`
-        if (diffDay < 7) return `${diffDay} dni temu`
+        if (diffDay < 7) {
+            if (diffDay === 1) return `${diffDay} dzień temu`
+            return `${diffDay} dni temu`
+        }
 
         return date.toLocaleTimeString([], { day: 'numeric', month: 'short' })
     }
