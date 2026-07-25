@@ -13,7 +13,7 @@ from psycopg2.extras import RealDictCursor
 import json
 import dotenv
 import os
-import magic
+from ws import ConnectionManager
 
 dotenv.load_dotenv()
 
@@ -317,27 +317,26 @@ async def chat(token: str = Depends(oauth_scheme), conversation_id: str = Query(
     return c
 
 
-connections: dict[int, WebSocket] = {}
+ws_manager = ConnectionManager()
 
 @app.websocket("/ws/chat")
 async def chat_endpoint(websocket: WebSocket, token: str = Query(...)):
     try:
         payload = jwt.decode(token, settings.secret_key, settings.algorithm)
     except JWTError:
-        await websocket.close(code=1008)
+        await websocket.close()
         return
-    user_id = int(payload.get('sub'))
-    await websocket.accept()
-    connections[user_id] = websocket
 
-    try:
+    user_id = int(payload.get('sub'))
+    await ws_manager.connect(str(user_id), websocket)
+
+    try: 
         while True:
             raw = await websocket.receive_text()
             data = json.loads(raw)
-            print(f"DATA ---- {data}")
 
-            conversation_id = data['conversationId']
-            msg_type = data['type']
+            conversation_id = data["conversationId"]
+            msg_type = data["type"]
 
             if msg_type == 'message':
                 row = await fetch_one_commit(
@@ -360,11 +359,10 @@ async def chat_endpoint(websocket: WebSocket, token: str = Query(...)):
                     "SELECT user_id FROM conversation_participants WHERE conversation_id = %s",
                     (conversation_id,)
                 )
-                participant_ids = [p["user_id"] for p in participants]
 
-                for u_id in participant_ids:
-                    if u_id in connections:
-                        await connections[u_id].send_json(payload_out)
+                participant_ids = [str(p["user_id"]) for p in participants]
+
+                await ws_manager.broadcast(participant_ids, payload_out)
 
             elif msg_type == "edit_message":
                 row = await fetch_one(
@@ -392,11 +390,9 @@ async def chat_endpoint(websocket: WebSocket, token: str = Query(...)):
                     (conversation_id,)
                 )
 
-                participant_ids = [p["user_id"] for p in participants]
+                participant_ids = [str(p["user_id"]) for p in participants]
                 
-                for u_id in participant_ids:
-                    if u_id in connections:
-                        await connections[u_id].send_json(payload_out) 
+                await ws_manager.broadcast(participant_ids, payload_out)
 
             elif msg_type == "delete_message":
                 sender_id = data["senderId"]
@@ -425,11 +421,9 @@ async def chat_endpoint(websocket: WebSocket, token: str = Query(...)):
                     (conversation_id,)
                 )
 
-                participant_ids = [p["user_id"] for p in participants]
+                participant_ids = [str(p["user_id"]) for p in participants]
 
-                for u_id in participant_ids:
-                    if u_id in connections:
-                        await connections[u_id].send_json(payload_out)
+                await ws_manager.broadcast(participant_ids, payload_out)
 
             else:
                 payload_out = {
@@ -442,10 +436,8 @@ async def chat_endpoint(websocket: WebSocket, token: str = Query(...)):
                     "SELECT user_id FROM conversation_participants WHERE conversation_id = %s",
                     (conversation_id,)
                 )
-                participant_ids = [p["user_id"] for p in participants]
+                participant_ids = [str(p["user_id"]) for p in participants]
 
-                for u_id in participant_ids:
-                    if u_id != user_id and u_id in connections:
-                        await connections[u_id].send_json(payload_out)
+                await ws_manager.broadcast(participant_ids, payload_out)
     except WebSocketDisconnect:
-        connections.pop(user_id, None)
+        ws_manager.disconnect(user_id, websocket)
