@@ -47,6 +47,14 @@ export function useSocket(token) {
                 }))
             }
 
+            if (type === 'delete_message') {
+                setMessagesByConversation((prev) => ({
+                    ...prev, [conversationId]: (prev[conversationId] ?? []).map((msg) => (
+                        msg.messageId === data.messageId ? { ...msg, deleted: true } : msg
+                    ))
+                }))
+            }
+
             if (type === "typing") {
                 setTypingByConversation((prev) => {
                     const set = new Set(prev[conversationId] ?? [])
@@ -94,6 +102,12 @@ export function useSocket(token) {
         }
     }
 
+    const deleteMessage = (conversationId, messageId, senderId) => {
+        if (ws.current?.readyState === WebSocket.OPEN) {
+            ws.current.send(JSON.stringify({ type: "delete_message" , conversationId, messageId, senderId }))
+        }
+    }
+
     const setConversationMessages  = (conversationId, messages) => {
         setMessagesByConversation(prev => ({...prev, [conversationId]: messages}))
     }
@@ -105,6 +119,7 @@ export function useSocket(token) {
         setConversationMessages,
         sendMessage,
         sendTyping,
+        deleteMessage,
         editMessage
     }
 }

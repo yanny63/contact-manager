@@ -713,6 +713,18 @@ html, body {
   background-color: var(--accent);
 }
 
+.message-deleted {
+  padding: var(--padding-md);
+  border-radius: var(--radius-xl);
+  color: var(--text);
+  font-style: italic;
+  font-size: 0.9rem;
+  opacity: 0.6;
+  background-color: transparent;
+  border: 1px solid var(--border);
+  transition: 0.4s;
+} 
+
 .other {
   flex-direction: row;
 }
@@ -838,6 +850,61 @@ html, body {
   transform: scale(1.05);
 }
 .message-editing-input button:active {
+  transform: scale(0.95);
+}
+
+.ensure-removal-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(240px, 30vw, 520px);
+  padding: var(--padding-md);
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: var(--radius-md);
+  z-index: 3001;
+  color: var(--text);
+  animation: previewIn 0.4s ease-in-out;
+}
+.ensure-removal-container[data-state="closed"] {
+  animation: previewOut 0.4s ease-in-out;
+} 
+.ensure-removal-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.remove-button {
+  background-color: rgba(251, 44, 54, 0.3);
+  border: 1px solid var(--error);
+  padding: var(--padding-md);
+  border-radius: var(--radius-xl);
+  width: clamp(140px, 10vw, 220px);
+  color: var(--text);
+  cursor: pointer;
+  transition: 0.4s;
+}
+.remove-button:hover {
+  background-color: rgba(251, 44, 54, 0.4);
+}
+.cancel-button {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--input-border);
+  padding: var(--padding-md);
+  border-radius: var(--radius-xl);
+  width: clamp(140px, 10vw, 220px);
+  color: var(--text);
+  cursor: pointer;
+  transition: 0.4s;
+}
+.cancel-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.remove-button:active, .cancel-button:active {
   transform: scale(0.95);
 }
 

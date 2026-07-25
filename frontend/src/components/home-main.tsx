@@ -168,6 +168,11 @@ function MessageEditingInput({ editingMessage, setEditingMessage, editMessage })
     )
 }
 
+interface MessageRemoval {
+    id: string
+    senderId: string
+}
+
 function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused, setEmojisFocused, user }) {
     const pickerRef = useRef<HTMLDivElement>(null)
     const cursorPosRef = useRef<number | null>(null)
@@ -175,8 +180,8 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
     const buttonRef = useRef<HTMLButtonElement>(null)
     const timeoutRef = useRef<number | null>(null)
     const bottomChatRef = useRef<HTMLDivElement | null>(null)
-
-    const { messagesByConversation, typingByConversation, setConversationMessages, sendMessage, sendTyping, editMessage } = useChat()
+        
+    const { messagesByConversation, typingByConversation, setConversationMessages, sendMessage, sendTyping, deleteMessage, editMessage } = useChat()
 
     function trackCursor() {
         if (inputRef.current) {
@@ -249,11 +254,17 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
         })
     }, [messages, typing])
 
+    function handleDelete() {
+        deleteMessage(id, ensureRemoval.id, ensureRemoval.senderId)
+        setEnsureRemoval(null)
+    }
+
     const [ messageHovered, setMessageHovered ] = useState<number | null>(null)
     const [ attachmentHovered, setAttachmentHovered ] = useState<boolean>(false)
     const [ previewOpen, setPreviewOpen ] = useState<boolean>(false)
     const [ editingMessage, setEditingMessage ] = useState<EditingMessage | null>(null)
     const [ messageManagementOn, setMessageManagementOn ] = useState<boolean>(false)
+    const [ ensureRemoval, setEnsureRemoval ] = useState<MessageRemoval | null>(null)
 
     return (
         <div className='chat-open'>
@@ -274,9 +285,15 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
             </div>
             <div className='chat-content'>
                 { messages.map((message, i) => (
+                    message.deleted ? 
                     <div className='main-msg-container' 
-                    style={message.senderId === user.id ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }}>
-                        <div key={message.messageId ?? i} onMouseEnter={() => {setMessageHovered(message.messageId)}}
+                    style={message.senderId === user.id ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }} key={message.messageId ?? i}>
+                        <span className='message-deleted'>Wiadomość usunięta przez nadawcę</span>
+                    </div>
+                    :
+                    <div className='main-msg-container' 
+                    style={message.senderId === user.id ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }} key={message.messageId ?? i}>
+                        <div onMouseEnter={() => {setMessageHovered(message.messageId)}}
                         className={message.senderId === user.id ? 'message-container user' : 'message-container other'}>
                             { message.senderId !== user.id ? 
                             <div className='message-avatar'>
@@ -296,13 +313,13 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
                                     { message.senderId !== user.id ? <></> : 
                                     <>
                                         <span onClick={() => {setEditingMessage({ conversationId: id, messageId: message.messageId, content: message.text })}}>Edytuj wiadomość</span>
-                                        <span>Usuń wiadomość</span>
+                                        <span onClick={() => {setEnsureRemoval({ id: message.messageId, senderId: message.senderId })}}>Usuń wiadomość</span>
                                     </>}
                                 </div> }
                             </div>}
                         </div>
                         { message.editedAt && <span className='edited-at-span'>Edytowano o {formatEditedTime(message.editedAt)}</span>}
-                    </div> // xd
+                    </div> 
                 ))}
                 <AnimatePresence>
                     { isTyping && 
@@ -374,6 +391,19 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
                     </Dialog.Content>
                 </Dialog.Portal>
             </Dialog.Root> }
+            { ensureRemoval && 
+            <Dialog.Root open={ensureRemoval ? true : false}>
+                <Dialog.Portal>
+                    <Dialog.Overlay className='preview-overlay' onClick={() => {setEnsureRemoval(null)}} />
+                    <Dialog.Content className='ensure-removal-container'>
+                        <Dialog.Title>Na pewno usunąć tę wiadomość?</Dialog.Title>
+                        <div className='ensure-removal-inner'>
+                            <button className='remove-button' onClick={() => {handleDelete()}}>Usuń</button>
+                            <button className='cancel-button' onClick={() => {setEnsureRemoval(null)}}>Anuluj</button>
+                        </div>
+                    </Dialog.Content>
+                </Dialog.Portal>
+            </Dialog.Root>}
         </div>
     )
 }

@@ -307,14 +307,13 @@ async def chat(token: str = Depends(oauth_scheme), conversation_id: str = Query(
         raise HTTPException(status_code=401, detail="Uzytkownik niezalogowany")
 
     c = await fetch_all(
-        """SELECT m.id, m.sender_id, m.body, m.created_at, m.read_at, m.edited_at, m_a.type, m_a.url
+        """SELECT m.id, m.sender_id, m.body, m.created_at, m.read_at, m.edited_at, m.deleted, m_a.type, m_a.url
         FROM messages AS m
         LEFT JOIN message_attachments AS m_a ON m.id = m_a.message_id
         WHERE m.conversation_id = %s
         ORDER BY m.created_at ASC LIMIT 20""",
         (int(conversation_id),)
     )
-    print(c)
     return c
 
 
@@ -395,10 +394,42 @@ async def chat_endpoint(websocket: WebSocket, token: str = Query(...)):
 
                 participant_ids = [p["user_id"] for p in participants]
                 
-                print(f"Connections: {connections}")
                 for u_id in participant_ids:
                     if u_id in connections:
                         await connections[u_id].send_json(payload_out) 
+
+            elif msg_type == "delete_message":
+                sender_id = data["senderId"]
+                message_id = data["messageId"]
+
+                row = await fetch_one(
+                    """SELECT id FROM messages WHERE id = %s AND conversation_id = %s AND sender_id = %s""",
+                    (message_id, conversation_id, sender_id)
+                )
+                if not row:
+                    continue
+
+                await execute(
+                    """UPDATE messages SET deleted = %s WHERE id = %s""", (True, message_id)
+                )   
+
+                payload_out = {
+                    "type": "delete_message",
+                    "conversationId": conversation_id,
+                    "senderId": sender_id,
+                    "messageId": message_id
+                }
+
+                participants = await fetch_all(
+                    "SELECT user_id FROM conversation_participants WHERE conversation_id = %s",
+                    (conversation_id,)
+                )
+
+                participant_ids = [p["user_id"] for p in participants]
+
+                for u_id in participant_ids:
+                    if u_id in connections:
+                        await connections[u_id].send_json(payload_out)
 
             else:
                 payload_out = {

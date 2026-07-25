@@ -14,6 +14,7 @@ interface ChatMessages {
     created_at: string
     read_at?: string
     edited_at?: string
+    deleted: boolean
     type?: string
     url?: string
 }
@@ -274,6 +275,7 @@ export async function getChat(id: string) {
         readAt: m.read_at,
         messageId: m.id,
         editedAt: m.edited_at,
+        deleted: m.deleted,
         url: m.url,
         type: m.type
     }));
