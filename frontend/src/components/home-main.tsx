@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, KeyboardEvent, ChangeEvent, useCallback } from 'react';
+import { useState, useEffect, useRef, KeyboardEvent, ChangeEvent, useCallback, memo } from 'react';
 import { getContacts, getChats, getMe, getChat, getOlderMessages } from '../ts/api';
 import { formatPhoneNumber, formatPhoneNumberIntl } from 'react-phone-number-input';
 import { AnimatePresence, motion, transform } from 'framer-motion';
@@ -7,8 +7,10 @@ import EmojiPicker, { EmojiStyle, Theme, EmojiClickData } from 'emoji-picker-rea
 import { useUser } from '../contexts/context';
 import { useChat } from '../contexts/chat'; 
 import { IconDots, IconMoodSmile, IconShare3, IconDotsVertical, IconPaperclip, IconCheck, IconX, IconLoader2 } from '@tabler/icons-react';
-import { useForceUpdate } from '../ts/utils';
+import { useForceUpdate, formatName, formatNumber, formatTime, Avatar } from '../ts/utils';
 import * as Dialog from '@radix-ui/react-dialog'
+import { ChatItem, DisplayChats } from '../ts/chats';
+import { input } from 'framer-motion/client';
 
 function SearchInput({ setSearch }) {
     return (
@@ -173,7 +175,7 @@ interface MessageRemoval {
     senderId: string
 }
 
-function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused, setEmojisFocused, user, bottomChatRef, scrollBlockerRef }) {
+function Chat({ id, info, message, setMessage, lightMode, emojisFocused, setEmojisFocused, user, bottomChatRef, scrollBlockerRef }) {
     const pickerRef = useRef<HTMLDivElement>(null)
     const cursorPosRef = useRef<number | null>(null)
     const inputRef = useRef<HTMLInputElement>(null)
@@ -495,7 +497,7 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
     )
 }
 
-function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode, asideVisible, setAsideVisible }) { 
+function Main({ numbers, setNumbers, inputRef, setAsideClosed, lightMode, asideVisible, setAsideVisible }) { 
 
     interface ChatsInt {
         id: string
@@ -549,7 +551,7 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
         setCurrentlyOpen(null)
     }, [user])
 
-    const { messagesByConversation } = useChat()
+    const { messagesByConversation, typingByConversation } = useChat()
 
     useEffect(() => {
         setChats((prev) => prev.map((chat) => {
@@ -580,17 +582,6 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
                 ))}
             </div>
         )
-    }
-
-    function formatName(name: string) {
-        const parts = name.trim().split(" ")
-        if (parts.length === 1) return parts[0]
-        return `${parts[0]} ${parts.at(-1)[0]}.`
-    }
-
-    function formatNumber(prefix: string, phone: string) {
-        const number = `+${prefix}${phone}`
-        return formatPhoneNumberIntl(number)
     }
 
     function ChatSkeleton() {
@@ -637,134 +628,19 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
     const bottomChatRef = useRef<HTMLDivElement | null>(null)
     const scrollBlockerRef = useRef<boolean>(true)
 
-    function handleChatOpen() {
-        if (!bottomChatRef.current) return
-        bottomChatRef.current.scrollIntoView({
-            behavior: 'instant'
+    const handleOpenChat = useCallback((chat: ChatsInt) => {
+        setCurrentlyOpen(chat.conversation_id)
+        setCurrentInfo({
+            id: chat.id,
+            nickname: chat.nickname || null, 
+            phone: chat.phone, 
+            prefix: chat.prefix, 
+            picture: chat.picture || null, 
+            favourite: chat.favourite
         })
-        scrollBlockerRef.current = false
-    }
+        setChatOpen(true)
+    }, [])
 
-    function formatTime(isotime: string) {
-        const date = new Date(isotime)
-        const now = new Date()
-
-        const diffMs = now.getTime() - date.getTime()
-        const diffSec = Math.floor(diffMs / 1000)
-        const diffMin = Math.floor(diffSec / 60)
-        const diffHour = Math.floor(diffMin / 60)
-        const diffDay = Math.floor(diffHour / 24)
-
-        if (diffSec < 60) return "przed chwilą"
-        if (diffMin < 60) return `${diffMin} min temu`
-        if (diffHour < 24) return `${diffHour} godz. temu`
-        if (diffDay < 7) {
-            if (diffDay === 1) return `${diffDay} dzień temu`
-            return `${diffDay} dni temu`
-        }
-
-        return date.toLocaleTimeString([], { day: 'numeric', month: 'short' })
-    }
-
-    function DisplayChats() {
-
-        useForceUpdate()
-
-        return (
-            <div className='chats-container'>
-                { !chatsLoaded ? 
-                <ChatSkeleton />
-                : chats === undefined || chats.length === 0 ? 
-                <div className='no-chats'>
-                    <div className='no-chats-icon'>
-                        <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-messages">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                            <path d="M21 14l-3 -3h-7a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1h9a1 1 0 0 1 1 1v10" />
-                            <path d="M14 15v2a1 1 0 0 1 -1 1h-7l-3 3v-10a1 1 0 0 1 1 -1h2" />
-                        </svg>
-                    </div>
-                    <h3>Brak rozmów</h3>
-                    <p>Dodaj pierwszy kontakt i zacznij pisać</p>
-                    <button onClick={() => {inputRef.current?.focus(), setAsideClosed(false)}}>Nowy Kontakt</button>
-                </div> : 
-                
-                currentlyDisplayed === 'all' ? search ? chats.filter(n => n.nickname.toLowerCase().includes(search.toLowerCase())).map((numb) => (
-                    <div className='chat' onClick={() => {setCurrentlyOpen(numb.conversation_id)
-                    setCurrentInfo({id: numb.id, nickname: numb.nickname || null, phone: numb.phone, prefix: numb.prefix, picture: numb.picture || null, favourite: numb.favourite}),
-                     setChatOpen(true)}} key={numb.conversation_id}> 
-                        <div className='inner-chat-container'>
-                            <Avatar user={numb}/>
-                            <div className='central-chat-container'>
-                                <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
-                                <span className='last-message'>{ numb.body.length > 40 ? `${numb.body.slice(0, 40)}...` : numb.body.slice(0, 40) }</span>
-                            </div>
-                        </div>
-                        <div className='created-at'>
-                            <span className='created-at-display'>{ formatTime(numb.created_at) }</span>
-                            <span>{/* Not read */}</span>
-                        </div>
-                    </div>
-                )) : chats.map((numb) => (
-                    <div className='chat' onClick={() => {setCurrentlyOpen(numb.conversation_id)
-                        setChatOpen(true),
-                        setCurrentInfo({id: numb.id, nickname: numb.nickname || null, phone: numb.phone, prefix: numb.prefix, picture: numb.picture || null, favourite: numb.favourite})}} 
-                        key={numb.conversation_id}> 
-                        <div className='inner-chat-container'>
-                            <Avatar user={numb}/>
-                            <div className='central-chat-container'>
-                                <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
-                                <span className='last-message'>{ numb.body.length > 40 ? `${numb.body.slice(0, 40)}...` : numb.body.slice(0, 40) }</span>
-                            </div>
-                        </div>
-                        <div className='created-at'>
-                            <span className='created-at-display'>{ formatTime(numb.created_at) }</span>
-                            <span>{/* Not read */}</span>
-                        </div>
-                    </div>
-                )) 
-                : currentlyDisplayed === 'fav' ? search ? chats.filter(n => n.nickname.toLowerCase().includes(search.toLowerCase())).filter(numb => numb.favourite).map((numb => (
-                    <div className='chat' onClick={() => {setCurrentlyOpen(numb.conversation_id)
-                        setChatOpen(true),
-                        setCurrentInfo({id: numb.id, nickname: numb.nickname || null, phone: numb.phone, prefix: numb.prefix, picture: numb.picture || null, favourite: numb.favourite})}} 
-                        key={numb.conversation_id}>
-                        <div className='inner-chat-container'>
-                            <Avatar user={numb}/>
-                            <div className='central-chat-container'>
-                                <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
-                                <span className='last-message'>{ numb.body.length > 40 ? `${numb.body.slice(0, 40)}...` : numb.body.slice(0, 40) }</span>
-                            </div>
-                        </div>
-                        <div className='created-at'>
-                            <span className='created-at-display'>{ formatTime(numb.created_at) }</span>
-                            <span>{/* Not read */}</span>
-                        </div>
-                    </div>
-                    ))) :
-                chats.filter(numb => numb.favourite).map((numb => (
-                    <div className='chat' onClick={() => {setCurrentlyOpen(numb.conversation_id)
-                    setChatOpen(true),
-                    setCurrentInfo({nickname: numb.nickname || null, phone: numb.phone, prefix: numb.prefix, picture: numb.picture || null, favourite: numb.favourite})}}
-                    key={numb.conversation_id}>
-                        <div className='inner-chat-container'>
-                            <Avatar user={numb}/>
-                            <div className='central-chat-container'>
-                                <span>{ numb.nickname ? formatName(numb.nickname) : formatNumber(numb.prefix, numb.phone)}</span>
-                                <span className='last-message'>{ numb.body }</span>
-                            </div>
-                        </div>
-                        <div className='created-at'>
-                            <span className='created-at-display'>{ formatTime(numb.created_at) }</span>
-                            <span>{/* Not read */}</span>
-                        </div>
-                    </div>
-                    )))
-                : <span></span>
-                // : {numbers.map()}
-
-                }
-            </div>
-        )
-    }
 
     return (
         <div className="home-article">
@@ -773,12 +649,14 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
                     <Buttons />
                 </div>}
                 { chats.length > 0 && <SearchInput setSearch={setSearch}/>}
-                <DisplayChats />    
+                <DisplayChats chats={chats} currentlyDisplayed={currentlyDisplayed} chatsLoaded={chatsLoaded}
+                search={search} ChatSkeleton={ChatSkeleton} typingByConversation={typingByConversation}
+                handleOpenChat={handleOpenChat} inputRef={inputRef} setAsideClosed={setAsideClosed} />    
             </div>
             <ChatCloser />
             <div className={chatOpen ? 'chat-container' : 'chat-container chat-not-visible'}>
                 {currentlyOpen ? (
-                    user?.id && <Chat id={currentlyOpen} info={currentInfo} Avatar={Avatar} message={message} 
+                    user?.id && <Chat id={currentlyOpen} info={currentInfo} message={message} 
                     setMessage={setMessage} lightMode={lightMode} emojisFocused={emojisFocused} 
                     setEmojisFocused={setEmojisFocused} user={user} bottomChatRef={bottomChatRef} scrollBlockerRef={scrollBlockerRef} /> 
                 ) : (

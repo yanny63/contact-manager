@@ -6,6 +6,7 @@ import { newContact, getContacts, favToggle } from "../ts/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Link } from "react-router-dom"
 import { useUser } from "../contexts/context"
+import { Avatar } from "../ts/utils"
 import '../css/aside.css'
 
 function NotLoggedInOverlay({ popupVisible, setPopupVisible, phone, setPhone }) {
@@ -80,7 +81,7 @@ function NotLoggedInOverlay({ popupVisible, setPopupVisible, phone, setPhone }) 
     )
 }
 
-function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, Avatar, inputRef }) {
+function Aside({ search, setSearch, onError, checkToken, numbers, setNumbers, inputRef }) {
 
     interface NumberType {
         id: number
