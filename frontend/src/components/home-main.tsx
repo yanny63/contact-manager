@@ -331,6 +331,8 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
     }, [])
 
     const topChatRef = useCallback((node: HTMLDivElement | null) => {
+        topChatDiv.current = node
+        
         if (!observerRef.current) return
 
         observerRef.current.disconnect()
