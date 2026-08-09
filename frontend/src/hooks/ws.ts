@@ -22,7 +22,7 @@ export function useSocket(token) {
         
         if (!token) return
         
-        ws.current = new WebSocket(`ws://192.168.1.34:8000/ws/chat?token=${token}`)
+        ws.current = new WebSocket(`ws://192.168.0.126:8000/ws/chat?token=${token}`)
 
         ws.current.onopen = () => {
             setIsConnected(true)
@@ -112,6 +112,16 @@ export function useSocket(token) {
         setMessagesByConversation(prev => ({...prev, [conversationId]: messages}))
     }
 
+    const prependConversationMessages = (conversationId, olderMessages) => {
+        setMessagesByConversation(prev => ({
+            ...prev,
+            [conversationId]: [
+                ...olderMessages,
+                ...(prev[conversationId] ?? [])
+            ]
+        }))
+    }
+
     return {
         isConnected,
         messagesByConversation,
@@ -120,6 +130,7 @@ export function useSocket(token) {
         sendMessage,
         sendTyping,
         deleteMessage,
-        editMessage
+        editMessage,
+        prependConversationMessages
     }
 }

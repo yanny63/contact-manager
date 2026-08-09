@@ -1,6 +1,5 @@
-import { preinit } from "react-dom"
-
-const BASE_URL = 'http://192.168.1.34:8000'
+// const BASE_URL = 'http://localhost:8000'
+const BASE_URL = 'http://192.168.0.126:8000'
 
 interface resError {
     detail?: string
@@ -267,8 +266,35 @@ export async function getChat(id: string) {
         throw new Error(data.detail || `Błąd serwera: ${data.status}`)
     }
     const data : ChatMessages[] = await res.json()
-    console.log(data)
+
     return data.map((m: ChatMessages) => ({
+        senderId: m.sender_id,
+        text: m.body,
+        createdAt: m.created_at,
+        readAt: m.read_at,
+        messageId: m.id,
+        editedAt: m.edited_at,
+        deleted: m.deleted,
+        url: m.url,
+        type: m.type
+    }));
+}
+
+export async function getOlderMessages(message_id: string, conversation_id: string) {
+    const response = await fetch(`http://localhost:8000/API/older_messages?last_message_id=${message_id}&conversation_id=${conversation_id}`, { 
+        headers: {
+            "Authorization": `Bearer ${localStorage.getItem('token')}`
+        }
+    })
+
+    if (!response.ok) {
+        const data : resError = await response.json()
+        throw new Error(data.detail || `Błąd serwera: ${data.status}`)
+    }
+
+    const older : ChatMessages[] = await response.json()
+
+    return older.map((m: ChatMessages) => ({
         senderId: m.sender_id,
         text: m.body,
         createdAt: m.created_at,

@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef, KeyboardEvent, ChangeEvent } from 'react';
-import { getContacts, getChats, getMe, getChat } from '../ts/api';
+import { useState, useEffect, useRef, KeyboardEvent, ChangeEvent, useCallback } from 'react';
+import { getContacts, getChats, getMe, getChat, getOlderMessages } from '../ts/api';
 import { formatPhoneNumber, formatPhoneNumberIntl } from 'react-phone-number-input';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, transform } from 'framer-motion';
 import Skeleton from '../skeletons/skeleton';
 import EmojiPicker, { EmojiStyle, Theme, EmojiClickData } from 'emoji-picker-react';
 import { useUser } from '../contexts/context';
 import { useChat } from '../contexts/chat'; 
-import { IconDots, IconMoodSmile, IconShare3, IconDotsVertical, IconPaperclip, IconCheck, IconX } from '@tabler/icons-react';
+import { IconDots, IconMoodSmile, IconShare3, IconDotsVertical, IconPaperclip, IconCheck, IconX, IconLoader2 } from '@tabler/icons-react';
 import { useForceUpdate } from '../ts/utils';
 import * as Dialog from '@radix-ui/react-dialog'
 
@@ -173,15 +173,14 @@ interface MessageRemoval {
     senderId: string
 }
 
-function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused, setEmojisFocused, user }) {
+function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused, setEmojisFocused, user, bottomChatRef, scrollBlockerRef }) {
     const pickerRef = useRef<HTMLDivElement>(null)
     const cursorPosRef = useRef<number | null>(null)
     const inputRef = useRef<HTMLInputElement>(null)
     const buttonRef = useRef<HTMLButtonElement>(null)
     const timeoutRef = useRef<number | null>(null)
-    const bottomChatRef = useRef<HTMLDivElement | null>(null)
         
-    const { messagesByConversation, typingByConversation, setConversationMessages, sendMessage, sendTyping, deleteMessage, editMessage } = useChat()
+    const { messagesByConversation, typingByConversation, setConversationMessages, sendMessage, sendTyping, deleteMessage, editMessage, prependConversationMessages } = useChat()
 
     function trackCursor() {
         if (inputRef.current) {
@@ -248,16 +247,23 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
     }
 
     useEffect(() => {
-        if (!bottomChatRef.current) return
-        bottomChatRef.current?.scrollIntoView({
+        if (!bottomChatRef.current ) return
+        if (scrollBlockerRef.current) {
+            bottomChatRef.current.scrollIntoView({
+                behavior: 'instant'
+            })
+            scrollBlockerRef.current = false
+            return
+        }
+        bottomChatRef.current.scrollIntoView({
             behavior: 'smooth'
         })
-    }, [messages, typing])
+    }, [messages, isTyping])
 
     function handleDelete() {
         deleteMessage(id, ensureRemoval.id, ensureRemoval.senderId)
         setEnsureRemoval(null)
-    }
+    } 
 
     const [ messageHovered, setMessageHovered ] = useState<number | null>(null)
     const [ attachmentHovered, setAttachmentHovered ] = useState<boolean>(false)
@@ -265,6 +271,74 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
     const [ editingMessage, setEditingMessage ] = useState<EditingMessage | null>(null)
     const [ messageManagementOn, setMessageManagementOn ] = useState<boolean>(false)
     const [ ensureRemoval, setEnsureRemoval ] = useState<MessageRemoval | null>(null)
+
+    const chatContentRef = useRef<HTMLDivElement>(null)
+    const topChatDiv = useRef<HTMLDivElement>(null)
+    const messagesRef = useRef(messages)
+    const [ loadingOlder, setLoadingOlder ] = useState<boolean>(false)
+    const loadingOlderRef = useRef<boolean>(false)
+
+    useEffect(() => {
+        messagesRef.current = messages
+    }, [messages])
+
+    const loadOlderMessages = async () => {
+        if (loadingOlderRef.current || !messagesRef.current?.length) return
+
+        loadingOlderRef.current = true
+        setLoadingOlder(true)
+
+        const oldScrollHeight = chatContentRef.current?.scrollHeight
+
+        try {
+            const older = await getOlderMessages(messagesRef.current?.[0].messageId, id)
+            if (older.length) {
+                prependConversationMessages(id, older)
+                requestAnimationFrame(() => {
+                    const chat = chatContentRef.current
+
+                    if (chat) {
+                        chat.scrollTop += chat.scrollHeight - oldScrollHeight;
+                    } 
+                }) 
+            }
+        }
+        catch (err) {
+            console.log(err)
+            return
+        }
+        finally {
+            loadingOlderRef.current = false
+            setLoadingOlder(false)
+        }
+    } 
+
+    const observerRef = useRef<IntersectionObserver | null>(null)
+
+    useEffect(() => {
+        observerRef.current = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                loadOlderMessages() 
+            }
+        }, {
+            root: chatContentRef.current
+        })
+        if (topChatDiv.current) {
+            observerRef.current?.observe(topChatDiv.current)
+        }
+
+        return () => observerRef.current?.disconnect()
+    }, [])
+
+    const topChatRef = useCallback((node: HTMLDivElement | null) => {
+        if (!observerRef.current) return
+
+        observerRef.current.disconnect()
+
+        if (node) {
+            observerRef.current.observe(node)
+        }
+    }, [])
 
     return (
         <div className='chat-open'>
@@ -283,16 +357,27 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
                     )}
                 </div>
             </div>
-            <div className='chat-content'>
+            <div className='chat-content' ref={chatContentRef}>
+                <AnimatePresence>
+                    { loadingOlder &&
+                        <motion.div className='loading-older-messages'
+                        initial={{ transform: 'translateY(-40px)'}}
+                        exit={{ opacity: 0 }}
+                        animate={{ transform: 'translateY(0)' }}
+                        transition={{ duration: 0.4 }}>
+                            <IconLoader2 stroke={2} />
+                        </motion.div>   
+                    }
+                </AnimatePresence>
                 { messages.map((message, i) => (
                     message.deleted ? 
-                    <div className='main-msg-container' 
-                    style={message.senderId === user.id ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }} key={message.messageId ?? i}>
+                    <div className='main-msg-container' ref={i === 0 ? topChatRef : undefined}
+                    style={message.senderId === user.id ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }} key={message.messageId}>
                         <span className='message-deleted'>Wiadomość usunięta przez nadawcę</span>
                     </div>
                     :
-                    <div className='main-msg-container' 
-                    style={message.senderId === user.id ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }} key={message.messageId ?? i}>
+                    <div className='main-msg-container' ref={i === 0 ? topChatRef : undefined}
+                    style={message.senderId === user.id ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }} key={message.messageId}>
                         <div onMouseEnter={() => {setMessageHovered(message.messageId)}}
                         className={message.senderId === user.id ? 'message-container user' : 'message-container other'}>
                             { message.senderId !== user.id ? 
@@ -386,9 +471,9 @@ function Chat({ id, info, Avatar, message, setMessage, lightMode, emojisFocused,
                 <Dialog.Portal>
                     <Dialog.Overlay className='preview-overlay' onClick={() => (setPreviewOpen(false))} />
                     <Dialog.Content className='preview-content-container'>
-                        { attachment.type === 'image' ? <img src={attachment.previewUrl} alt='podgląd' /> : 
-                        attachment.type === 'video' ? <video src={attachment.previewUrl} controls /> : <></> }
-                    </Dialog.Content>
+                        { attachment.type === 'image' ? <img src={attachment.previewUrl} alt='podgląd' style={{ outline: 'none' }} /> : 
+                        attachment.type === 'video' ? <video src={attachment.previewUrl} controls style={{ outline: 'none' }} /> : <></> }
+                    </Dialog.Content> 
                 </Dialog.Portal>
             </Dialog.Root> }
             { ensureRemoval && 
@@ -547,6 +632,17 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
         )
     }
 
+    const bottomChatRef = useRef<HTMLDivElement | null>(null)
+    const scrollBlockerRef = useRef<boolean>(true)
+
+    function handleChatOpen() {
+        if (!bottomChatRef.current) return
+        bottomChatRef.current.scrollIntoView({
+            behavior: 'instant'
+        })
+        scrollBlockerRef.current = false
+    }
+
     function formatTime(isotime: string) {
         const date = new Date(isotime)
         const now = new Date()
@@ -607,7 +703,7 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
                         </div>
                     </div>
                 )) : chats.map((numb) => (
-                    <div className='chat' onClick={() => {setCurrentlyOpen(numb.conversation_id), 
+                    <div className='chat' onClick={() => {setCurrentlyOpen(numb.conversation_id)
                         setChatOpen(true),
                         setCurrentInfo({id: numb.id, nickname: numb.nickname || null, phone: numb.phone, prefix: numb.prefix, picture: numb.picture || null, favourite: numb.favourite})}} 
                         key={numb.conversation_id}> 
@@ -625,7 +721,7 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
                     </div>
                 )) 
                 : currentlyDisplayed === 'fav' ? search ? chats.filter(n => n.nickname.toLowerCase().includes(search.toLowerCase())).filter(numb => numb.favourite).map((numb => (
-                    <div className='chat' onClick={() => {setCurrentlyOpen(numb.conversation_id), 
+                    <div className='chat' onClick={() => {setCurrentlyOpen(numb.conversation_id)
                         setChatOpen(true),
                         setCurrentInfo({id: numb.id, nickname: numb.nickname || null, phone: numb.phone, prefix: numb.prefix, picture: numb.picture || null, favourite: numb.favourite})}} 
                         key={numb.conversation_id}>
@@ -643,7 +739,7 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
                     </div>
                     ))) :
                 chats.filter(numb => numb.favourite).map((numb => (
-                    <div className='chat' onClick={() => {setCurrentlyOpen(numb.conversation_id), 
+                    <div className='chat' onClick={() => {setCurrentlyOpen(numb.conversation_id)
                     setChatOpen(true),
                     setCurrentInfo({nickname: numb.nickname || null, phone: numb.phone, prefix: numb.prefix, picture: numb.picture || null, favourite: numb.favourite})}}
                     key={numb.conversation_id}>
@@ -681,7 +777,8 @@ function Main({ numbers, setNumbers, Avatar, inputRef, setAsideClosed, lightMode
             <div className={chatOpen ? 'chat-container' : 'chat-container chat-not-visible'}>
                 {currentlyOpen ? (
                     user?.id && <Chat id={currentlyOpen} info={currentInfo} Avatar={Avatar} message={message} 
-                    setMessage={setMessage} lightMode={lightMode} emojisFocused={emojisFocused} setEmojisFocused={setEmojisFocused} user={user} /> 
+                    setMessage={setMessage} lightMode={lightMode} emojisFocused={emojisFocused} 
+                    setEmojisFocused={setEmojisFocused} user={user} bottomChatRef={bottomChatRef} scrollBlockerRef={scrollBlockerRef} /> 
                 ) : (
                     <ChatPlaceholder />
                 )}

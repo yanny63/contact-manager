@@ -6,7 +6,7 @@ import { newContact, getContacts, favToggle } from "../ts/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Link } from "react-router-dom"
 import { useUser } from "../contexts/context"
-import { aside } from "framer-motion/client"
+import '../css/aside.css'
 
 function NotLoggedInOverlay({ popupVisible, setPopupVisible, phone, setPhone }) {
 

@@ -21,7 +21,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*'],
+    allow_origins=['http://192.168.1.34:5173', 'http://localhost:5173', 'http://10.103.156.6:5173', "http://192.168.0.126:5173"],
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*']
@@ -311,11 +311,30 @@ async def chat(token: str = Depends(oauth_scheme), conversation_id: str = Query(
         FROM messages AS m
         LEFT JOIN message_attachments AS m_a ON m.id = m_a.message_id
         WHERE m.conversation_id = %s
-        ORDER BY m.created_at ASC LIMIT 20""",
+        ORDER BY m.created_at DESC LIMIT 20""",
         (int(conversation_id),)
     )
+
+    c.reverse()
+
     return c
 
+@app.get("/API/older_messages")
+async def getOlderMessages(last_message_id: str = Query(...), conversation_id: str = Query(...), token: str = Depends(oauth_scheme)):
+    try:
+        payload = jwt.decode(token, settings.secret_key, settings.algorithm)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Uzytkownik niezalogowany")
+    
+    older = await fetch_all(
+        """SELECT m.id, m.sender_id, m.body, m.created_at, m.read_at, m.edited_at, m.deleted, m_a.type, m_a.url
+        FROM messages AS m
+        LEFT JOIN message_attachments AS m_a ON m.id = m_a.message_id
+        WHERE m.conversation_id = %s AND m.id < %s
+        ORDER BY m.created_at ASC LIMIT 20""", (conversation_id, last_message_id)
+    )
+
+    return older
 
 ws_manager = ConnectionManager()
 
